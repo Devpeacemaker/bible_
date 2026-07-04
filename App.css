@@ -1,22 +1,75 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
 
-void main() {
-  runApp(const PeaceMBibleApp());
-}
-
-class PeaceMBibleApp extends StatelessWidget {
-  const PeaceMBibleApp({super.key});
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Peace M Bible',
-      theme: ThemeData(
-        primarySwatch: Colors.purple,
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3E5F5),
+      appBar: AppBar(
+        title: const Text("Peace M Bible"),
+        centerTitle: true,
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
       ),
-      home: const HomeScreen(),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.purple,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Column(
+                children: [
+                  Text(
+                    "Welcome to Peace M Bible",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    "Your daily companion for God's Word",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            _menuButton(Icons.menu_book, "Read Bible"),
+            const SizedBox(height: 15),
+            _menuButton(Icons.search, "Search"),
+            const SizedBox(height: 15),
+            _menuButton(Icons.calendar_today, "Daily Verse"),
+            const SizedBox(height: 15),
+            _menuButton(Icons.bookmark, "Bookmarks"),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _menuButton(IconData icon, String title) {
+    return SizedBox(
+      width: double.infinity,
+      height: 55,
+      child: ElevatedButton.icon(
+        onPressed: () {},
+        icon: Icon(icon),
+        label: Text(title),
+      ),
     );
   }
 }
