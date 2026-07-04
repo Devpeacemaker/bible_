@@ -1,31 +1,6 @@
-import 'package:flutter/material.dart';
-
-class BibleScreen extends StatelessWidget {
-  const BibleScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Genesis 1"),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
-      ),
-      body: const Padding(
-        padding: EdgeInsets.all(16),
-        child: SingleChildScrollView(
-          child: Text(
-            "1 In the beginning God created the heavens and the earth.\n\n"
-            "2 Now the earth was formless and empty, darkness was over the surface of the deep, "
-            "and the Spirit of God was hovering over the waters.\n\n"
-            "3 And God said, 'Let there be light,' and there was light.",
-            style: TextStyle(
-              fontSize: 20,
-              height: 1.8,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+static Widget _menuButton(
+  BuildContext context,
+  IconData icon,
+  String title,
+  VoidCallback onPressed,
+) {
