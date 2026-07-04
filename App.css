@@ -1,52 +1,33 @@
-import 'package:flutter/material.dart';
-import 'bible_screen.dart';
+onTap: () {
+  int chapters = 1;
 
-class ChapterScreen extends StatelessWidget {
-  final String book;
-  final int totalChapters;
-
-  const ChapterScreen({
-    super.key,
-    required this.book,
-    required this.totalChapters,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(book),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
-      ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: totalChapters,
-        gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-        ),
-        itemBuilder: (context, index) {
-          final chapter = index + 1;
-
-          return ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const BibleScreen(),
-                ),
-              );
-            },
-            child: Text(
-              chapter.toString(),
-              style: const TextStyle(fontSize: 18),
-            ),
-          );
-        },
-      ),
-    );
+  switch (book) {
+    case "Genesis":
+      chapters = 50;
+      break;
+    case "Exodus":
+      chapters = 40;
+      break;
+    case "Leviticus":
+      chapters = 27;
+      break;
+    case "Numbers":
+      chapters = 36;
+      break;
+    case "Deuteronomy":
+      chapters = 34;
+      break;
+    default:
+      chapters = 1;
   }
-}
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ChapterScreen(
+        book: book,
+        totalChapters: chapters,
+      ),
+    ),
+  );
+},
