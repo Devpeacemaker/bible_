@@ -1,10 +1,5 @@
-import 'package:flutter/material.dart';
-import 'bible_screen.dart';
-
-class BooksScreen extends StatelessWidget {
-  const BooksScreen({super.key});
-
-  final List<String> oldTestament = const [
+class BibleBooks {
+  static const List<String> oldTestament = [
     "Genesis",
     "Exodus",
     "Leviticus",
@@ -46,7 +41,7 @@ class BooksScreen extends StatelessWidget {
     "Malachi",
   ];
 
-  final List<String> newTestament = const [
+  static const List<String> newTestament = [
     "Matthew",
     "Mark",
     "Luke",
@@ -75,95 +70,4 @@ class BooksScreen extends StatelessWidget {
     "Jude",
     "Revelation",
   ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF3E5F5),
-      appBar: AppBar(
-        title: const Text("Bible Books"),
-        centerTitle: true,
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: "Search book...",
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              children: [
-                _sectionTitle("OLD TESTAMENT"),
-
-                ...oldTestament.map(
-                  (book) => _bookTile(context, book),
-                ),
-
-                _sectionTitle("NEW TESTAMENT"),
-
-                ...newTestament.map(
-                  (book) => _bookTile(context, book),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _sectionTitle(String title) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.purple,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Widget _bookTile(BuildContext context, String book) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      elevation: 2,
-      child: ListTile(
-        leading: const Icon(
-          Icons.menu_book,
-          color: Colors.purple,
-        ),
-        title: Text(book),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const BibleScreen(),
-            ),
-          );
-        },
-      ),
-    );
-  }
 }
