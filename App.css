@@ -1,91 +1,44 @@
-.App {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  color: #fff;
-  font-family: 'Georgia', serif;
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const PeaceMBibleApp());
 }
 
-.app-header {
-  padding: 2rem;
-  text-align: center;
-  border-bottom: 2px solid #f39c12;
+class PeaceMBibleApp extends StatelessWidget {
+  const PeaceMBibleApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Peace M Bible',
+      theme: ThemeData(
+        primarySwatch: Colors.purple,
+      ),
+      home: const HomePage(),
+    );
+  }
 }
 
-.app-header h1 {
-  font-size: 2.5rem;
-  margin: 0;
-  color: #f39c12;
-}
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
-.app-main {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.controls {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-bottom: 2rem;
-}
-
-.controls input {
-  padding: 0.8rem 1rem;
-  border: none;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.1);
-  color: #fff;
-  font-size: 1rem;
-  flex: 1;
-  min-width: 100px;
-}
-
-.controls button {
-  padding: 0.8rem 2rem;
-  background: #f39c12;
-  border: none;
-  border-radius: 8px;
-  color: #1a1a2e;
-  font-weight: bold;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.controls button:hover {
-  transform: scale(1.05);
-}
-
-.verse-display {
-  background: rgba(255,255,255,0.05);
-  border-radius: 12px;
-  padding: 2rem;
-  min-height: 200px;
-}
-
-.verse-card {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  border-left: 4px solid #f39c12;
-}
-
-.reference {
-  display: block;
-  color: #f39c12;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-}
-
-.verse-text {
-  font-size: 1.2rem;
-  line-height: 1.8;
-  margin: 0;
-}
-
-.no-verse {
-  text-align: center;
-  color: #888;
-  font-style: italic;
-  padding: 2rem 0;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Peace M Bible'),
+        centerTitle: true,
+      ),
+      body: const Center(
+        child: Text(
+          'Welcome to Peace M Bible',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
 }
