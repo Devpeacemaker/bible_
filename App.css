@@ -1,44 +1,108 @@
 import 'package:flutter/material.dart';
-import 'bible_screen.dart';
+import 'books_screen.dart';
 
-class BooksScreen extends StatelessWidget {
-  const BooksScreen({super.key});
-
-  final List<String> books = const [
-    "Genesis",
-    "Exodus",
-    "Leviticus",
-    "Numbers",
-    "Deuteronomy",
-  ];
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF3E5F5),
       appBar: AppBar(
-        title: const Text("Books"),
+        title: const Text("Peace M Bible"),
+        centerTitle: true,
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
       ),
-      body: ListView.builder(
-        itemCount: books.length,
-        itemBuilder: (context, index) {
-          return ListTile(
-            leading: const Icon(Icons.menu_book),
-            title: Text(books[index]),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () {
-              if (books[index] == "Genesis") {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const BibleScreen(),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.purple,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Column(
+                children: [
+                  Text(
+                    "Welcome to Peace M Bible",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                );
-              }
-            },
-          );
-        },
+                  SizedBox(height: 10),
+                  Text(
+                    "Your daily companion for God's Word",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const BooksScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.menu_book),
+                label: const Text("Read Bible"),
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.search),
+                label: const Text("Search"),
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.calendar_today),
+                label: const Text("Daily Verse"),
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.bookmark),
+                label: const Text("Bookmarks"),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
