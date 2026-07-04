@@ -1,141 +1,48 @@
 import 'package:flutter/material.dart';
-import '../data/bible_books.dart';
 import 'bible_screen.dart';
 
-class BooksScreen extends StatefulWidget {
-  const BooksScreen({super.key});
+class ChapterScreen extends StatelessWidget {
+  final String book;
+  final int totalChapters;
 
-  @override
-  State<BooksScreen> createState() => _BooksScreenState();
-}
-
-class _BooksScreenState extends State<BooksScreen> {
-  String search = "";
+  const ChapterScreen({
+    super.key,
+    required this.book,
+    required this.totalChapters,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final oldBooks = BibleBooks.oldTestament
-        .where((book) =>
-            book.toLowerCase().contains(search.toLowerCase()))
-        .toList();
-
-    final newBooks = BibleBooks.newTestament
-        .where((book) =>
-            book.toLowerCase().contains(search.toLowerCase()))
-        .toList();
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E5F5),
       appBar: AppBar(
-        title: const Text("Bible Books"),
-        centerTitle: true,
+        title: Text(book),
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
       ),
-      body: Column(
-        children: [
-
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              onChanged: (value) {
-                setState(() {
-                  search = value;
-                });
-              },
-              decoration: InputDecoration(
-                hintText: "Search Bible book...",
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-          ),
-
-          Expanded(
-            child: ListView(
-              children: [
-
-                if (oldBooks.isNotEmpty)
-                  _sectionTitle("OLD TESTAMENT"),
-
-                ...oldBooks.map(
-                  (book) => _bookTile(context, book),
-                ),
-
-                if (newBooks.isNotEmpty)
-                  _sectionTitle("NEW TESTAMENT"),
-
-                ...newBooks.map(
-                  (book) => _bookTile(context, book),
-                ),
-
-                if (oldBooks.isEmpty &&
-                    newBooks.isEmpty)
-
-                  const Padding(
-                    padding: EdgeInsets.all(40),
-                    child: Center(
-                      child: Text(
-                        "No books found.",
-                        style: TextStyle(
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-Widget _sectionTitle(String title) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.purple,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
+      body: GridView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: totalChapters,
+        gridDelegate:
+            const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
         ),
-      ),
-    );
-  }
+        itemBuilder: (context, index) {
+          final chapter = index + 1;
 
-  Widget _bookTile(BuildContext context, String book) {
-    return Card(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 4,
-      ),
-      child: ListTile(
-        leading: const Icon(
-          Icons.menu_book,
-          color: Colors.purple,
-        ),
-        title: Text(book),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 18,
-        ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const BibleScreen(),
+          return ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BibleScreen(),
+                ),
+              );
+            },
+            child: Text(
+              chapter.toString(),
+              style: const TextStyle(fontSize: 18),
             ),
           );
         },
