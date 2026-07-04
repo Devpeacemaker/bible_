@@ -1,27 +1,7 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const PeaceMBibleApp());
-}
-
-class PeaceMBibleApp extends StatelessWidget {
-  const PeaceMBibleApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Peace M Bible',
-      theme: ThemeData(
-        primarySwatch: Colors.purple,
-      ),
-      home: const HomePage(),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -30,13 +10,46 @@ class HomePage extends StatelessWidget {
         title: const Text('Peace M Bible'),
         centerTitle: true,
       ),
-      body: const Center(
-        child: Text(
-          'Welcome to Peace M Bible',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            const Text(
+              'Welcome to Peace M Bible',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            ElevatedButton(
+              onPressed: () {},
+              child: const Text('📖 Read Bible'),
+            ),
+
+            const SizedBox(height: 15),
+
+            ElevatedButton(
+              onPressed: () {},
+              child: const Text('🔍 Search'),
+            ),
+
+            const SizedBox(height: 15),
+
+            ElevatedButton(
+              onPressed: () {},
+              child: const Text('📅 Daily Verse'),
+            ),
+
+            const SizedBox(height: 15),
+
+            ElevatedButton(
+              onPressed: () {},
+              child: const Text('⭐ Bookmarks'),
+            ),
+          ],
         ),
       ),
     );
