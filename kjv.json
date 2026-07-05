@@ -1,29 +1,56 @@
-class SavedVerse {
-  final String book;
-  final int chapter;
-  final int verse;
-  final String text;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/saved_verse.dart';
 
-  SavedVerse({
-    required this.book,
-    required this.chapter,
-    required this.verse,
-    required this.text,
-  });
+class LibraryService {
+  static const String bookmarksKey = "bookmarks";
+  static const String favoritesKey = "favorites";
 
-  Map<String, dynamic> toJson() => {
-        "book": book,
-        "chapter": chapter,
-        "verse": verse,
-        "text": text,
-      };
+  static Future<List<SavedVerse>> getBookmarks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(bookmarksKey);
 
-  factory SavedVerse.fromJson(Map<String, dynamic> json) {
-    return SavedVerse(
-      book: json["book"],
-      chapter: json["chapter"],
-      verse: json["verse"],
-      text: json["text"],
+    if (data == null) return [];
+
+    final List list = jsonDecode(data);
+
+    return list.map((e) => SavedVerse.fromJson(e)).toList();
+  }
+
+  static Future<void> addBookmark(SavedVerse verse) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final bookmarks = await getBookmarks();
+
+    bookmarks.add(verse);
+
+    await prefs.setString(
+      bookmarksKey,
+      jsonEncode(bookmarks.map((e) => e.toJson()).toList()),
+    );
+  }
+
+  static Future<List<SavedVerse>> getFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(favoritesKey);
+
+    if (data == null) return [];
+
+    final List list = jsonDecode(data);
+
+    return list.map((e) => SavedVerse.fromJson(e)).toList();
+  }
+
+  static Future<void> addFavorite(SavedVerse verse) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final favorites = await getFavorites();
+
+    favorites.add(verse);
+
+    await prefs.setString(
+      favoritesKey,
+      jsonEncode(favorites.map((e) => e.toJson()).toList()),
     );
   }
 }
