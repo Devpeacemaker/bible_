@@ -1,33 +1,154 @@
-onTap: () {
-  int chapters = 1;
+import 'package:flutter/material.dart';
+import '../data/bible_books.dart';
+import 'chapter_screen.dart';
 
-  switch (book) {
-    case "Genesis":
-      chapters = 50;
-      break;
-    case "Exodus":
-      chapters = 40;
-      break;
-    case "Leviticus":
-      chapters = 27;
-      break;
-    case "Numbers":
-      chapters = 36;
-      break;
-    case "Deuteronomy":
-      chapters = 34;
-      break;
-    default:
-      chapters = 1;
+class BooksScreen extends StatefulWidget {
+  const BooksScreen({super.key});
+
+  @override
+  State<BooksScreen> createState() => _BooksScreenState();
+}
+
+class _BooksScreenState extends State<BooksScreen> {
+  String search = "";
+
+  int getChapterCount(String book) {
+    const chapters = {
+      "Genesis": 50,
+      "Exodus": 40,
+      "Leviticus": 27,
+      "Numbers": 36,
+      "Deuteronomy": 34,
+      "Joshua": 24,
+      "Judges": 21,
+      "Ruth": 4,
+      "1 Samuel": 31,
+      "2 Samuel": 24,
+      "1 Kings": 22,
+      "2 Kings": 25,
+      "Psalms": 150,
+      "Proverbs": 31,
+      "Matthew": 28,
+      "Mark": 16,
+      "Luke": 24,
+      "John": 21,
+      "Acts": 28,
+      "Romans": 16,
+      "Revelation": 22,
+    };
+
+    return chapters[book] ?? 1;
   }
 
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => ChapterScreen(
-        book: book,
-        totalChapters: chapters,
+  @override
+  Widget build(BuildContext context) {
+    final oldBooks = BibleBooks.oldTestament
+        .where((b) => b.toLowerCase().contains(search.toLowerCase()))
+        .toList();
+
+    final newBooks = BibleBooks.newTestament
+        .where((b) => b.toLowerCase().contains(search.toLowerCase()))
+        .toList();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3E5F5),
+      appBar: AppBar(
+        title: const Text("Bible Books"),
+        centerTitle: true,
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
       ),
-    ),
-  );
-},
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              onChanged: (value) {
+                setState(() {
+                  search = value;
+                });
+              },
+              decoration: InputDecoration(
+                hintText: "Search a Bible book...",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              children: [
+                if (oldBooks.isNotEmpty) sectionTitle("OLD TESTAMENT"),
+                ...oldBooks.map((book) => bookTile(context, book)),
+
+                if (newBooks.isNotEmpty) sectionTitle("NEW TESTAMENT"),
+                ...newBooks.map((book) => bookTile(context, book)),
+
+                if (oldBooks.isEmpty && newBooks.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(30),
+                    child: Center(
+                      child: Text(
+                        "No books found.",
+                        style: TextStyle(fontSize: 18),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget sectionTitle(String title) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.purple,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget bookTile(BuildContext context, String book) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ListTile(
+        leading: const Icon(
+          Icons.menu_book,
+          color: Colors.purple,
+        ),
+        title: Text(book),
+        subtitle: Text("${getChapterCount(book)} chapters"),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChapterScreen(
+                book: book,
+                totalChapters: getChapterCount(book),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
