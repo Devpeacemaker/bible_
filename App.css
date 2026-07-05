@@ -1,62 +1,9 @@
-import 'package:flutter/material.dart';
-import 'bible_screen.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart';
 
-class ChapterScreen extends StatelessWidget {
-  final String book;
-  final int totalChapters;
-
-  const ChapterScreen({
-    super.key,
-    required this.book,
-    required this.totalChapters,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(book),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
-      ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: totalChapters,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.2,
-        ),
-        itemBuilder: (context, index) {
-          final chapter = index + 1;
-
-          return ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BibleScreen(
-                    book: book,
-                    chapter: chapter,
-                  ),
-                ),
-              );
-            },
-            child: Text(
-              chapter.toString(),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          );
-        },
-      ),
-    );
+class BibleService {
+  Future<Map<String, dynamic>> loadBible() async {
+    final data = await rootBundle.loadString('assets/bibles/rsv.json');
+    return json.decode(data);
   }
 }
