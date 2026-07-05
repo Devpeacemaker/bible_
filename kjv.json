@@ -1,23 +1,93 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'screens/main_navigation.dart';
+import 'main_navigation.dart';
 
-void main() {
-  runApp(const PeaceMBibleApp());
+class WelcomeScreen extends StatefulWidget {
+  const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class PeaceMBibleApp extends StatelessWidget {
-  const PeaceMBibleApp({super.key});
+class _WelcomeScreenState extends State<WelcomeScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+
+    Timer(const Duration(seconds: 3), () {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const MainNavigation(),
+        ),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Peace M Bible',
-      theme: ThemeData(
-        colorSchemeSeed: Colors.purple,
-        useMaterial3: true,
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF6A1B9A),
+              Color(0xFF8E24AA),
+              Color(0xFFAB47BC),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.menu_book_rounded,
+                  color: Colors.white,
+                  size: 120,
+                ),
+
+                const SizedBox(height: 30),
+
+                const Text(
+                  "Peace M Bible",
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+
+                const SizedBox(height: 15),
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 30),
+                  child: Text(
+                    '"Your word is a lamp to my feet\nand a light to my path."\n\nPsalm 119:105',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.white70,
+                      height: 1.6,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 50),
+
+                const CircularProgressIndicator(
+                  color: Colors.white,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-      home: const MainNavigation(),
     );
   }
 }
