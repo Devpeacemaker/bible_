@@ -1,63 +1,134 @@
 import 'package:flutter/material.dart';
-import '../models/saved_verse.dart';
-import '../services/library_service.dart';
+import 'books_screen.dart';
+import 'library_screen.dart';
 
-class FavoritesScreen extends StatefulWidget {
-  const FavoritesScreen({super.key});
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<FavoritesScreen> createState() => _FavoritesScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3E5F5),
+      appBar: AppBar(
+        title: const Text("Peace M Bible"),
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: GridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          children: [
+            buildCard(
+              context,
+              title: "Read Bible",
+              icon: Icons.menu_book,
+              color: Colors.deepPurple,
+              page: const BooksScreen(),
+            ),
+            buildCard(
+              context,
+              title: "My Library",
+              icon: Icons.bookmarks,
+              color: Colors.orange,
+              page: const LibraryScreen(),
+            ),
+            buildCard(
+              context,
+              title: "Daily Verse",
+              icon: Icons.wb_sunny,
+              color: Colors.green,
+              page: const PlaceholderScreen(title: "Daily Verse"),
+            ),
+            buildCard(
+              context,
+              title: "Settings",
+              icon: Icons.settings,
+              color: Colors.blue,
+              page: const PlaceholderScreen(title: "Settings"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Color color,
+    required Widget page,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => page),
+        );
+      },
+      child: Card(
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              radius: 32,
+              backgroundColor: color.withOpacity(0.15),
+              child: Icon(
+                icon,
+                color: color,
+                size: 34,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _FavoritesScreenState extends State<FavoritesScreen> {
-  List<SavedVerse> favorites = [];
+class PlaceholderScreen extends StatelessWidget {
+  final String title;
 
-  @override
-  void initState() {
-    super.initState();
-    loadFavorites();
-  }
-
-  Future<void> loadFavorites() async {
-    favorites = await LibraryService.getFavorites();
-    setState(() {});
-  }
+  const PlaceholderScreen({
+    super.key,
+    required this.title,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Favorites"),
+        title: Text(title),
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
       ),
-      body: favorites.isEmpty
-          ? const Center(
-              child: Text(
-                "No favorite verses yet.",
-                style: TextStyle(fontSize: 18),
-              ),
-            )
-          : ListView.builder(
-              itemCount: favorites.length,
-              itemBuilder: (context, index) {
-                final verse = favorites[index];
-
-                return Card(
-                  margin: const EdgeInsets.all(8),
-                  child: ListTile(
-                    leading: const Icon(
-                      Icons.favorite,
-                      color: Colors.red,
-                    ),
-                    title: Text(
-                      "${verse.book} ${verse.chapter}:${verse.verse}",
-                    ),
-                    subtitle: Text(verse.text),
-                  ),
-                );
-              },
-            ),
+      body: Center(
+        child: Text(
+          "$title coming soon...",
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
     );
   }
 }
