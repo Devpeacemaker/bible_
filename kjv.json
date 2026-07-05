@@ -1,64 +1,120 @@
-import 'dart:convert';
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
+import '../services/bible_service.dart';
 
-class BibleService {
-  static List<dynamic>? _books;
+class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
 
-  static Future<void> loadBible() async {
-    if (_books != null) return;
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
 
-    final jsonString = await rootBundle.loadString(
-      'assets/bibles/kjv.json',
-    );
+class _SearchScreenState extends State<SearchScreen> {
+  final TextEditingController controller = TextEditingController();
 
-    _books = json.decode(jsonString);
-  }
+  List<Map<String, dynamic>> results = [];
 
-  static Future<List<String>> getChapter(
-    int bookIndex,
-    int chapterIndex,
-  ) async {
-    await loadBible();
+  bool loading = false;
 
-    final chapters = _books![bookIndex]["chapters"] as List;
-    final verses = chapters[chapterIndex] as List;
-
-    return verses.map((e) => e.toString()).toList();
-  }
-
-  /// Search the whole Bible
-  static Future<List<Map<String, dynamic>>> searchBible(
-    String keyword,
-  ) async {
-    await loadBible();
-
-    keyword = keyword.toLowerCase();
-
-    List<Map<String, dynamic>> results = [];
-
-    for (int book = 0; book < _books!.length; book++) {
-      final bookData = _books![book];
-
-      final chapters = bookData["chapters"] as List;
-
-      for (int chapter = 0; chapter < chapters.length; chapter++) {
-        final verses = chapters[chapter] as List;
-
-        for (int verse = 0; verse < verses.length; verse++) {
-          final text = verses[verse].toString();
-
-          if (text.toLowerCase().contains(keyword)) {
-            results.add({
-              "bookIndex": book,
-              "chapter": chapter + 1,
-              "verse": verse + 1,
-              "text": text,
-            });
-          }
-        }
-      }
+  Future<void> search(String text) async {
+    if (text.trim().isEmpty) {
+      setState(() {
+        results = [];
+      });
+      return;
     }
 
-    return results;
+    setState(() {
+      loading = true;
+    });
+
+    final data = await BibleService.searchBible(text);
+
+    setState(() {
+      results = data;
+      loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3E5F5),
+      appBar: AppBar(
+        title: const Text("Search Bible"),
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: controller,
+              onChanged: search,
+              decoration: InputDecoration(
+                hintText: "Search the whole Bible...",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+
+          if (loading)
+            const Expanded(
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (results.isEmpty)
+            const Expanded(
+              child: Center(
+                child: Text(
+                  "Search any word like faith, love, Jesus...",
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView.builder(
+                itemCount: results.length,
+                itemBuilder: (context, index) {
+                  final verse = results[index];
+
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.purple,
+                        child: Text(
+                          verse["verse"].toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        "Chapter ${verse["chapter"]}",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(verse["text"]),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
