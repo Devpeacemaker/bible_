@@ -1,102 +1,30 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart';
 
-class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+class BibleService {
+  static List<dynamic>? _books;
 
-  @override
-  State<SearchScreen> createState() => _SearchScreenState();
-}
+  /// Load the KJV Bible only once
+  static Future<void> loadBible() async {
+    if (_books != null) return;
 
-class _SearchScreenState extends State<SearchScreen> {
-  final TextEditingController controller = TextEditingController();
+    final jsonString = await rootBundle.loadString(
+      'assets/bibles/kjv.json',
+    );
 
-  List<Map<String, String>> results = [];
-
-  void search(String query) {
-    query = query.toLowerCase();
-
-    // Temporary sample data.
-    // We'll replace this with a full Bible search engine next.
-    final bible = [
-      {
-        "reference": "John 3:16",
-        "text":
-            "For God so loved the world, that he gave his only begotten Son..."
-      },
-      {
-        "reference": "Genesis 1:1",
-        "text":
-            "In the beginning God created the heaven and the earth."
-      },
-      {
-        "reference": "Psalm 23:1",
-        "text":
-            "The Lord is my shepherd; I shall not want."
-      },
-    ];
-
-    setState(() {
-      results = bible.where((verse) {
-        return verse["text"]!.toLowerCase().contains(query) ||
-            verse["reference"]!.toLowerCase().contains(query);
-      }).toList();
-    });
+    _books = json.decode(jsonString);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Search Bible"),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: controller,
-              onChanged: search,
-              decoration: InputDecoration(
-                hintText: "Search any verse...",
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: results.isEmpty
-                ? const Center(
-                    child: Text("No matching verses found."),
-                  )
-                : ListView.builder(
-                    itemCount: results.length,
-                    itemBuilder: (context, index) {
-                      final verse = results[index];
+  /// Return all verses for a chapter
+  static Future<List<String>> getChapter(
+    int bookIndex,
+    int chapterIndex,
+  ) async {
+    await loadBible();
 
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        child: ListTile(
-                          title: Text(
-                            verse["reference"]!,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Text(verse["text"]!),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
+    final chapters = _books![bookIndex]["chapters"] as List;
+    final verses = chapters[chapterIndex] as List;
+
+    return verses.map((e) => e.toString()).toList();
   }
 }
