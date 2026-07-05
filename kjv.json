@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+
+import '../models/saved_verse.dart';
 import '../services/bible_service.dart';
+import '../services/library_service.dart';
 
 class BibleScreen extends StatefulWidget {
   final String book;
@@ -21,7 +26,9 @@ class BibleScreen extends StatefulWidget {
 
 class _BibleScreenState extends State<BibleScreen> {
   late int currentChapter;
+
   List<String> verses = [];
+
   bool loading = true;
 
   @override
@@ -50,6 +57,13 @@ class _BibleScreenState extends State<BibleScreen> {
     });
   }
 
+  void previousChapter() {
+    if (currentChapter > 1) {
+      currentChapter--;
+      loadChapter();
+    }
+  }
+
   void nextChapter() {
     if (currentChapter < widget.totalChapters) {
       currentChapter++;
@@ -57,11 +71,105 @@ class _BibleScreenState extends State<BibleScreen> {
     }
   }
 
-  void previousChapter() {
-    if (currentChapter > 1) {
-      currentChapter--;
-      loadChapter();
-    }
+  Future<void> showVerseMenu(
+      int verseNumber,
+      String verseText,
+      ) async {
+    final verse = SavedVerse(
+      book: widget.book,
+      chapter: currentChapter,
+      verse: verseNumber,
+      text: verseText,
+    );
+
+    await showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.bookmark),
+                title: const Text("Bookmark"),
+                onTap: () async {
+                  await LibraryService.addBookmark(verse);
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Verse bookmarked"),
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.favorite),
+                title: const Text("Favorite"),
+                onTap: () async {
+                  await LibraryService.addFavorite(verse);
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Added to favorites"),
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.copy),
+                title: const Text("Copy Verse"),
+                onTap: () async {
+                  await Clipboard.setData(
+                    ClipboardData(
+                      text:
+                          "${widget.book} $currentChapter:$verseNumber\n\n$verseText",
+                    ),
+                  );
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Verse copied"),
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share),
+                title: const Text("Share Verse"),
+                onTap: () async {
+                  await Share.share(
+                    "${widget.book} $currentChapter:$verseNumber\n\n$verseText",
+                  );
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.close),
+                title: const Text("Cancel"),
+                onTap: () {
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -83,27 +191,38 @@ class _BibleScreenState extends State<BibleScreen> {
                     padding: const EdgeInsets.all(16),
                     itemCount: verses.length,
                     itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: RichText(
-                          text: TextSpan(
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.black,
-                              height: 1.7,
-                            ),
-                            children: [
-                              TextSpan(
-                                text: "${index + 1}. ",
-                                style: const TextStyle(
-                                  color: Colors.purple,
-                                  fontWeight: FontWeight.bold,
+                      final verseNumber = index + 1;
+
+                      return InkWell(
+                        onLongPress: () {
+                          showVerseMenu(
+                            verseNumber,
+                            verses[index],
+                          );
+                        },
+                        child: Padding(
+                          padding:
+                              const EdgeInsets.only(bottom: 14),
+                          child: RichText(
+                            text: TextSpan(
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: Colors.black,
+                                height: 1.8,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: "$verseNumber ",
+                                  style: const TextStyle(
+                                    color: Colors.purple,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              TextSpan(
-                                text: verses[index],
-                              ),
-                            ],
+                                TextSpan(
+                                  text: verses[index],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -122,8 +241,9 @@ class _BibleScreenState extends State<BibleScreen> {
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed:
-                              currentChapter == 1 ? null : previousChapter,
+                          onPressed: currentChapter == 1
+                              ? null
+                              : previousChapter,
                           icon: const Icon(Icons.arrow_back),
                           label: const Text("Previous"),
                         ),
@@ -131,9 +251,11 @@ class _BibleScreenState extends State<BibleScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: currentChapter == widget.totalChapters
-                              ? null
-                              : nextChapter,
+                          onPressed:
+                              currentChapter ==
+                                      widget.totalChapters
+                                  ? null
+                                  : nextChapter,
                           icon: const Icon(Icons.arrow_forward),
                           label: const Text("Next"),
                         ),
