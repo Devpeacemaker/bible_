@@ -2,24 +2,24 @@ import 'package:flutter/material.dart';
 import '../models/saved_verse.dart';
 import '../services/library_service.dart';
 
-class BookmarksScreen extends StatefulWidget {
-  const BookmarksScreen({super.key});
+class FavoritesScreen extends StatefulWidget {
+  const FavoritesScreen({super.key});
 
   @override
-  State<BookmarksScreen> createState() => _BookmarksScreenState();
+  State<FavoritesScreen> createState() => _FavoritesScreenState();
 }
 
-class _BookmarksScreenState extends State<BookmarksScreen> {
-  List<SavedVerse> bookmarks = [];
+class _FavoritesScreenState extends State<FavoritesScreen> {
+  List<SavedVerse> favorites = [];
 
   @override
   void initState() {
     super.initState();
-    loadBookmarks();
+    loadFavorites();
   }
 
-  Future<void> loadBookmarks() async {
-    bookmarks = await LibraryService.getBookmarks();
+  Future<void> loadFavorites() async {
+    favorites = await LibraryService.getFavorites();
     setState(() {});
   }
 
@@ -27,28 +27,28 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Bookmarks"),
+        title: const Text("Favorites"),
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
       ),
-      body: bookmarks.isEmpty
+      body: favorites.isEmpty
           ? const Center(
               child: Text(
-                "No bookmarked verses yet.",
+                "No favorite verses yet.",
                 style: TextStyle(fontSize: 18),
               ),
             )
           : ListView.builder(
-              itemCount: bookmarks.length,
+              itemCount: favorites.length,
               itemBuilder: (context, index) {
-                final verse = bookmarks[index];
+                final verse = favorites[index];
 
                 return Card(
                   margin: const EdgeInsets.all(8),
                   child: ListTile(
                     leading: const Icon(
-                      Icons.bookmark,
-                      color: Colors.purple,
+                      Icons.favorite,
+                      color: Colors.red,
                     ),
                     title: Text(
                       "${verse.book} ${verse.chapter}:${verse.verse}",
