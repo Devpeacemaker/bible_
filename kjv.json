@@ -1,159 +1,270 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'main_navigation.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
-class WelcomeScreen extends StatefulWidget {
-  const WelcomeScreen({super.key});
+import '../models/saved_verse.dart';
+import '../services/bible_service.dart';
+import '../services/library_service.dart';
+
+class BibleScreen extends StatefulWidget {
+  final String book;
+  final int chapter;
+  final int bookIndex;
+  final int totalChapters;
+
+  const BibleScreen({
+    super.key,
+    required this.book,
+    required this.chapter,
+    required this.bookIndex,
+    required this.totalChapters,
+  });
 
   @override
-  State<WelcomeScreen> createState() => _WelcomeScreenState();
+  State<BibleScreen> createState() => _BibleScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
+class _BibleScreenState extends State<BibleScreen> {
+  late int currentChapter;
+
+  List<String> verses = [];
+
+  bool loading = true;
 
   @override
   void initState() {
     super.initState();
+    currentChapter = widget.chapter;
+    loadChapter();
+  }
 
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    );
+  Future<void> loadChapter() async {
+    setState(() {
+      loading = true;
+    });
 
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeIn,
-    );
-
-    _scaleAnimation = Tween<double>(
-      begin: 0.7,
-      end: 1,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.elasticOut,
-      ),
-    );
-
-    _controller.forward();
-
-    Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const MainNavigation(),
-        ),
+    try {
+      verses = await BibleService.getChapter(
+        widget.bookIndex,
+        currentChapter - 1,
       );
+    } catch (e) {
+      verses = ["Error loading chapter:\n$e"];
+    }
+
+    setState(() {
+      loading = false;
     });
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  void previousChapter() {
+    if (currentChapter > 1) {
+      currentChapter--;
+      loadChapter();
+    }
+  }
+
+  void nextChapter() {
+    if (currentChapter < widget.totalChapters) {
+      currentChapter++;
+      loadChapter();
+    }
+  }
+
+  Future<void> showVerseMenu(
+      int verseNumber,
+      String verseText,
+      ) async {
+    final verse = SavedVerse(
+      book: widget.book,
+      chapter: currentChapter,
+      verse: verseNumber,
+      text: verseText,
+    );
+
+    await showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.bookmark),
+                title: const Text("Bookmark"),
+                onTap: () async {
+                  await LibraryService.addBookmark(verse);
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Verse bookmarked"),
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.favorite),
+                title: const Text("Favorite"),
+                onTap: () async {
+                  await LibraryService.addFavorite(verse);
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Added to favorites"),
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.copy),
+                title: const Text("Copy Verse"),
+                onTap: () async {
+                  await Clipboard.setData(
+                    ClipboardData(
+                      text:
+                          "${widget.book} $currentChapter:$verseNumber\n\n$verseText",
+                    ),
+                  );
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Verse copied"),
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share),
+                title: const Text("Share Verse"),
+                onTap: () async {
+                  await Share.share(
+                    "${widget.book} $currentChapter:$verseNumber\n\n$verseText",
+                  );
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.close),
+                title: const Text("Cancel"),
+                onTap: () {
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF4A148C),
-              Color(0xFF7B1FA2),
-              Color(0xFFAB47BC),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(25),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.menu_book_rounded,
-                      size: 90,
-                      color: Colors.white,
-                    ),
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  const Text(
-                    "Peace M Bible",
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  const Text(
-                    "Read • Study • Grow",
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.white70,
-                      letterSpacing: 1,
-                    ),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 30),
-                    child: Text(
-                      '"Your word is a lamp unto my feet,\nand a light unto my path."\n\nPsalm 119:105',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 19,
-                        height: 1.6,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 60),
-
-                  const CircularProgressIndicator(
-                    color: Colors.white,
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  const Text(
-                    "Powered by Peace M",
-                    style: TextStyle(
-                      color: Colors.white60,
-                      fontSize: 15,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+      appBar: AppBar(
+        title: Text("${widget.book} $currentChapter"),
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
       ),
+      body: loading
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: verses.length,
+                    itemBuilder: (context, index) {
+                      final verseNumber = index + 1;
+
+                      return InkWell(
+                        onLongPress: () {
+                          showVerseMenu(
+                            verseNumber,
+                            verses[index],
+                          );
+                        },
+                        child: Padding(
+                          padding:
+                              const EdgeInsets.only(bottom: 14),
+                          child: RichText(
+                            text: TextSpan(
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: Colors.black,
+                                height: 1.8,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: "$verseNumber ",
+                                  style: const TextStyle(
+                                    color: Colors.purple,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: verses[index],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    border: const Border(
+                      top: BorderSide(color: Colors.grey),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: currentChapter == 1
+                              ? null
+                              : previousChapter,
+                          icon: const Icon(Icons.arrow_back),
+                          label: const Text("Previous"),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed:
+                              currentChapter ==
+                                      widget.totalChapters
+                                  ? null
+                                  : nextChapter,
+                          icon: const Icon(Icons.arrow_forward),
+                          label: const Text("Next"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }
