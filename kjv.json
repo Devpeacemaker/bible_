@@ -1,133 +1,101 @@
 import 'package:flutter/material.dart';
-import 'books_screen.dart';
-import 'library_screen.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF3E5F5),
-      appBar: AppBar(
-        title: const Text("Peace M Bible"),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          children: [
-            buildCard(
-              context,
-              title: "Read Bible",
-              icon: Icons.menu_book,
-              color: Colors.deepPurple,
-              page: const BooksScreen(),
-            ),
-            buildCard(
-              context,
-              title: "My Library",
-              icon: Icons.bookmarks,
-              color: Colors.orange,
-              page: const LibraryScreen(),
-            ),
-            buildCard(
-              context,
-              title: "Daily Verse",
-              icon: Icons.wb_sunny,
-              color: Colors.green,
-              page: const PlaceholderScreen(title: "Daily Verse"),
-            ),
-            buildCard(
-              context,
-              title: "Settings",
-              icon: Icons.settings,
-              color: Colors.blue,
-              page: const PlaceholderScreen(title: "Settings"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget buildCard(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required Color color,
-    required Widget page,
-  }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => page),
-        );
-      },
-      child: Card(
-        elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircleAvatar(
-              radius: 32,
-              backgroundColor: color.withOpacity(0.15),
-              child: Icon(
-                icon,
-                color: color,
-                size: 34,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
+class _SearchScreenState extends State<SearchScreen> {
+  final TextEditingController controller = TextEditingController();
 
-  const PlaceholderScreen({
-    super.key,
-    required this.title,
-  });
+  List<Map<String, String>> results = [];
+
+  void search(String query) {
+    query = query.toLowerCase();
+
+    // Temporary sample data.
+    // We'll replace this with a full Bible search engine next.
+    final bible = [
+      {
+        "reference": "John 3:16",
+        "text":
+            "For God so loved the world, that he gave his only begotten Son..."
+      },
+      {
+        "reference": "Genesis 1:1",
+        "text":
+            "In the beginning God created the heaven and the earth."
+      },
+      {
+        "reference": "Psalm 23:1",
+        "text":
+            "The Lord is my shepherd; I shall not want."
+      },
+    ];
+
+    setState(() {
+      results = bible.where((verse) {
+        return verse["text"]!.toLowerCase().contains(query) ||
+            verse["reference"]!.toLowerCase().contains(query);
+      }).toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: const Text("Search Bible"),
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
       ),
-      body: Center(
-        child: Text(
-          "$title coming soon...",
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: controller,
+              onChanged: search,
+              decoration: InputDecoration(
+                hintText: "Search any verse...",
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
           ),
-        ),
+          Expanded(
+            child: results.isEmpty
+                ? const Center(
+                    child: Text("No matching verses found."),
+                  )
+                : ListView.builder(
+                    itemCount: results.length,
+                    itemBuilder: (context, index) {
+                      final verse = results[index];
+
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        child: ListTile(
+                          title: Text(
+                            verse["reference"]!,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Text(verse["text"]!),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
