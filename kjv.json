@@ -1,29 +1,29 @@
-name: peace_m_bible
-description: "A new Flutter project."
-publish_to: 'none'
+class SavedVerse {
+  final String book;
+  final int chapter;
+  final int verse;
+  final String text;
 
-version: 1.0.0+1
+  SavedVerse({
+    required this.book,
+    required this.chapter,
+    required this.verse,
+    required this.text,
+  });
 
-environment:
-  sdk: ^3.10.8
+  Map<String, dynamic> toJson() => {
+        "book": book,
+        "chapter": chapter,
+        "verse": verse,
+        "text": text,
+      };
 
-dependencies:
-  flutter:
-    sdk: flutter
-
-  cupertino_icons: ^1.0.8
-
-  shared_preferences: ^2.2.3
-  uuid: ^4.5.1
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-
-  flutter_lints: ^6.0.0
-
-flutter:
-  uses-material-design: true
-
-  assets:
-    - assets/bibles/
+  factory SavedVerse.fromJson(Map<String, dynamic> json) {
+    return SavedVerse(
+      book: json["book"],
+      chapter: json["chapter"],
+      verse: json["verse"],
+      text: json["text"],
+    );
+  }
+}
