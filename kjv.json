@@ -1,107 +1,65 @@
 import 'package:flutter/material.dart';
-import '../services/bible_service.dart';
+import 'bible_screen.dart';
 
-class BibleScreen extends StatefulWidget {
+class ChapterScreen extends StatelessWidget {
   final String book;
-  final int chapter;
+  final int totalChapters;
   final int bookIndex;
 
-  const BibleScreen({
+  const ChapterScreen({
     super.key,
     required this.book,
-    required this.chapter,
+    required this.totalChapters,
     required this.bookIndex,
   });
-
-  @override
-  State<BibleScreen> createState() => _BibleScreenState();
-}
-
-class _BibleScreenState extends State<BibleScreen> {
-  List<String> verses = [];
-  bool loading = true;
-  String error = "";
-
-  @override
-  void initState() {
-    super.initState();
-    loadChapter();
-  }
-
-  Future<void> loadChapter() async {
-    try {
-      final data = await BibleService.getChapter(
-        widget.bookIndex,
-        widget.chapter - 1,
-      );
-
-      setState(() {
-        verses = data;
-        loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        loading = false;
-        error = e.toString();
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("${widget.book} ${widget.chapter}"),
+        title: Text(book),
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
       ),
-      body: loading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
-          : error.isNotEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(
-                      error,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                      ),
-                    ),
+      body: GridView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: totalChapters,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemBuilder: (context, index) {
+          final chapter = index + 1;
+
+          return ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BibleScreen(
+                    book: book,
+                    chapter: chapter,
+                    bookIndex: bookIndex,
+                    totalChapters: totalChapters,
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: verses.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: RichText(
-                        text: TextSpan(
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            height: 1.7,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: "${index + 1}. ",
-                              style: const TextStyle(
-                                color: Colors.purple,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            TextSpan(
-                              text: verses[index],
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
                 ),
+              );
+            },
+            child: Text(
+              chapter.toString(),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
