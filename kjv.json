@@ -1,30 +1,64 @@
-import 'dart:convert';
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
+import 'bible_screen.dart';
 
-class BibleService {
-  static List<dynamic>? _books;
+class ChapterScreen extends StatelessWidget {
+  final String book;
+  final int totalChapters;
+  final int bookIndex;
 
-  /// Load the KJV Bible only once
-  static Future<void> loadBible() async {
-    if (_books != null) return;
+  const ChapterScreen({
+    super.key,
+    required this.book,
+    required this.totalChapters,
+    required this.bookIndex,
+  });
 
-    final jsonString = await rootBundle.loadString(
-      'assets/bibles/kjv.json',
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(book),
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
+      ),
+      body: GridView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: totalChapters,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemBuilder: (context, index) {
+          final chapter = index + 1;
+
+          return ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BibleScreen(
+                    book: book,
+                    chapter: chapter,
+                    bookIndex: bookIndex,
+                  ),
+                ),
+              );
+            },
+            child: Text(
+              chapter.toString(),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+        },
+      ),
     );
-
-    _books = json.decode(jsonString);
-  }
-
-  /// Return all verses for a chapter
-  static Future<List<String>> getChapter(
-    int bookIndex,
-    int chapterIndex,
-  ) async {
-    await loadBible();
-
-    final chapters = _books![bookIndex]["chapters"] as List;
-    final verses = chapters[chapterIndex] as List;
-
-    return verses.map((e) => e.toString()).toList();
   }
 }
