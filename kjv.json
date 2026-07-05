@@ -1,7 +1,134 @@
-title: Text(
-  "${BibleBooks.allBooks[verse["bookIndex"]]} "
-  "${verse["chapter"]}:${verse["verse"]}",
-  style: const TextStyle(
-    fontWeight: FontWeight.bold,
-  ),
-),
+import 'package:flutter/material.dart';
+import '../services/bible_service.dart';
+import '../data/bible_books.dart';
+import 'bible_screen.dart';
+
+class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
+
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
+  final TextEditingController controller = TextEditingController();
+
+  List<Map<String, dynamic>> results = [];
+  bool loading = false;
+
+  Future<void> search(String text) async {
+    if (text.trim().isEmpty) {
+      setState(() {
+        results = [];
+      });
+      return;
+    }
+
+    setState(() {
+      loading = true;
+    });
+
+    final data = await BibleService.searchBible(text);
+
+    setState(() {
+      results = data;
+      loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3E5F5),
+      appBar: AppBar(
+        title: const Text("Search Bible"),
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: controller,
+              onChanged: search,
+              decoration: InputDecoration(
+                hintText: "Search the whole Bible...",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          if (loading)
+            const Expanded(
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (results.isEmpty)
+            const Expanded(
+              child: Center(
+                child: Text(
+                  "Search any word like faith, love, Jesus...",
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView.builder(
+                itemCount: results.length,
+                itemBuilder: (context, index) {
+                  final verse = results[index];
+
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.purple,
+                        child: Text(
+                          verse["verse"].toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        "${BibleBooks.allBooks[verse["bookIndex"]]} "
+                        "${verse["chapter"]}:${verse["verse"]}",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(verse["text"]),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BibleScreen(
+                              book: BibleBooks.allBooks[verse["bookIndex"]],
+                              chapter: verse["chapter"],
+                              bookIndex: verse["bookIndex"],
+                              totalChapters: BibleBooks.chapterCounts[verse["bookIndex"]],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
