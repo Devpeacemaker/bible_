@@ -1,82 +1,22 @@
 import 'package:flutter/material.dart';
+import 'screens/home_screen.dart';
 
-import 'home_screen.dart';
-import 'search_screen.dart';
-import 'library_screen.dart';
-
-class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
-
-  @override
-  State<MainNavigation> createState() => _MainNavigationState();
+void main() {
+  runApp(const PeaceMBibleApp());
 }
 
-class _MainNavigationState extends State<MainNavigation> {
-  int currentIndex = 0;
-
-  final List<Widget> pages = const [
-    HomeScreen(),
-    SearchScreen(),
-    LibraryScreen(),
-    PlaceholderScreen(title: "Settings"),
-  ];
+class PeaceMBibleApp extends StatelessWidget {
+  const PeaceMBibleApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: pages[currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            currentIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.menu_book),
-            label: "Bible",
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.search),
-            label: "Search",
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.bookmarks),
-            label: "Library",
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings),
-            label: "Settings",
-          ),
-        ],
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Peace M Bible',
+      theme: ThemeData(
+        primarySwatch: Colors.purple,
       ),
-    );
-  }
-}
-
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-
-  const PlaceholderScreen({
-    super.key,
-    required this.title,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
-      ),
-      body: Center(
-        child: Text(
-          "$title coming soon...",
-          style: const TextStyle(fontSize: 20),
-        ),
-      ),
+      home: const HomeScreen(),
     );
   }
 }
