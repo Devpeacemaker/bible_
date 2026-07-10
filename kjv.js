@@ -12,10 +12,10 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-
   shared_preferences: ^2.2.3
-  uauid: ^4.5.1
+  uuid: ^4.5.1
   share_plus: ^11.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
