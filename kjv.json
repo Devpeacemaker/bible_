@@ -117,7 +117,9 @@ class _SearchScreenState extends State<SearchScreen> {
                               book: BibleBooks.allBooks[verse["bookIndex"]],
                               chapter: verse["chapter"],
                               bookIndex: verse["bookIndex"],
-                              totalChapters: BibleBooks.chapterCounts[verse["bookIndex"]],
+                              totalChapters: BibleBooks.chapterCounts[
+                                  verse["bookIndex"]],
+                              verse: verse["verse"], // ✅ Added
                             ),
                           ),
                         );
