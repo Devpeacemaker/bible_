@@ -9,12 +9,20 @@ class SettingsProvider extends ChangeNotifier {
   bool _soundEnabled = true;
   bool _keepScreenOn = false;
 
+  Color _highlightColor = Colors.yellow;
+  String _selectedBible = "kjv";
+  bool _isPremium = false;
+
   ThemeMode get themeMode => _themeMode;
   double get fontSize => _fontSize;
 
   bool get dailyVerse => _dailyVerse;
   bool get soundEnabled => _soundEnabled;
   bool get keepScreenOn => _keepScreenOn;
+
+  Color get highlightColor => _highlightColor;
+  String get selectedBible => _selectedBible;
+  bool get isPremium => _isPremium;
 
   Future<void> load() async {
     _themeMode = await SettingsService.getThemeMode();
@@ -23,6 +31,10 @@ class SettingsProvider extends ChangeNotifier {
     _dailyVerse = await SettingsService.getDailyVerse();
     _soundEnabled = await SettingsService.getSoundEnabled();
     _keepScreenOn = await SettingsService.getKeepScreenOn();
+
+    _highlightColor = await SettingsService.getHighlightColor();
+    _selectedBible = await SettingsService.getBibleVersion();
+    _isPremium = await SettingsService.isPremium();
 
     notifyListeners();
   }
@@ -54,6 +66,24 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setKeepScreenOn(bool value) async {
     _keepScreenOn = value;
     await SettingsService.saveKeepScreenOn(value);
+    notifyListeners();
+  }
+
+  Future<void> setHighlightColor(Color color) async {
+    _highlightColor = color;
+    await SettingsService.saveHighlightColor(color);
+    notifyListeners();
+  }
+
+  Future<void> setBibleVersion(String version) async {
+    _selectedBible = version;
+    await SettingsService.saveBibleVersion(version);
+    notifyListeners();
+  }
+
+  Future<void> activatePremium() async {
+    _isPremium = true;
+    await SettingsService.activatePremium();
     notifyListeners();
   }
 }
