@@ -1,68 +1,161 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import 'providers/settings_provider.dart';
-import 'providers/highlight_provider.dart';
-import 'providers/translation_provider.dart';
-
-import 'screens/main_navigation.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  final settingsProvider = SettingsProvider();
-  await settingsProvider.load();
-
-  final highlightProvider = HighlightProvider();
-  await highlightProvider.load();
-
-  final translationProvider = TranslationProvider();
-  await translationProvider.load();
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(
-          value: settingsProvider,
+class PremiumDialog {
+  static Future<void> show(
+    BuildContext context, {
+    required String feature,
+  }) async {
+    return showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-        ChangeNotifierProvider.value(
-          value: highlightProvider,
+
+        title: const Row(
+          children: [
+            Icon(
+              Icons.workspace_premium,
+              color: Colors.amber,
+            ),
+            SizedBox(width: 10),
+            Text("Premium Feature"),
+          ],
         ),
-        ChangeNotifierProvider.value(
-          value: translationProvider,
+
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            Text(
+              "$feature is available only in Peace M Bible Premium.",
+            ),
+
+            const SizedBox(height: 20),
+
+            const Text(
+              "Premium includes:",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            const ListTile(
+              leading: Icon(Icons.language),
+              title: Text("English Bible (ENG)"),
+            ),
+
+            const ListTile(
+              leading: Icon(Icons.public),
+              title: Text("Kiswahili Bible (SWA)"),
+            ),
+
+            const ListTile(
+              leading: Icon(Icons.note_alt),
+              title: Text("Bible Notes"),
+            ),
+
+            const ListTile(
+              leading: Icon(Icons.headphones),
+              title: Text("Audio Bible"),
+            ),
+          ],
         ),
-      ],
-      child: const PeaceMBibleApp(),
-    ),
-  );
+
+        actions: [
+
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text("Later"),
+          ),
+
+          ElevatedButton.icon(
+            icon: const Icon(Icons.payment),
+            label: const Text("Upgrade"),
+
+            onPressed: () {
+              Navigator.pop(context);
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PremiumPaymentScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class PeaceMBibleApp extends StatelessWidget {
-  const PeaceMBibleApp({super.key});
+class PremiumPaymentScreen extends StatelessWidget {
+  const PremiumPaymentScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context);
-
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Peace M Bible',
-
-      themeMode: settings.themeMode,
-
-      theme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-        brightness: Brightness.light,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Upgrade to Premium"),
       ),
 
-      darkTheme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-        brightness: Brightness.dark,
-      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
 
-      home: const MainNavigation(),
+            const Icon(
+              Icons.workspace_premium,
+              size: 90,
+              color: Colors.amber,
+            ),
+
+            const SizedBox(height: 20),
+
+            const Text(
+              "Peace M Bible Premium",
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            const Text(
+              "Unlock English Bible, Kiswahili Bible, Notes and Audio Bible.",
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 40),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.phone_android),
+                label: const Text("Pay with M-PESA"),
+
+                onPressed: () {
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Daraja integration will be connected here.",
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
