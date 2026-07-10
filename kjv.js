@@ -1,61 +1,87 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import 'providers/settings_provider.dart';
-import 'providers/highlight_provider.dart';
-
-import 'screens/main_navigation.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  final settingsProvider = SettingsProvider();
-  await settingsProvider.load();
-
-  final highlightProvider = HighlightProvider();
-  await highlightProvider.load();
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(
-          value: settingsProvider,
+class HighlightPicker {
+  static Future<Color?> show(
+    BuildContext context,
+  ) async {
+    return showModalBottomSheet<Color>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(20),
         ),
-        ChangeNotifierProvider.value(
-          value: highlightProvider,
-        ),
-      ],
-      child: const PeaceMBibleApp(),
-    ),
-  );
-}
-
-class PeaceMBibleApp extends StatelessWidget {
-  const PeaceMBibleApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context);
-
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Peace M Bible',
-
-      themeMode: settings.themeMode,
-
-      theme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-        brightness: Brightness.light,
       ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
 
-      darkTheme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-        brightness: Brightness.dark,
+              const Text(
+                "Highlight Verse",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              Wrap(
+                spacing: 18,
+                runSpacing: 18,
+                children: [
+
+                  colorButton(context, Colors.yellow),
+
+                  colorButton(context, Colors.green),
+
+                  colorButton(context, Colors.blue),
+
+                  colorButton(context, Colors.pink),
+
+                  colorButton(context, Colors.orange),
+
+                  colorButton(context, Colors.purple),
+
+                  colorButton(context, Colors.red),
+
+                  colorButton(context, Colors.cyan),
+                ],
+              ),
+
+              const SizedBox(height: 25),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.close),
+                  label: const Text("Cancel"),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget colorButton(
+    BuildContext context,
+    Color color,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context, color);
+      },
+      child: CircleAvatar(
+        radius: 25,
+        backgroundColor: color,
       ),
-
-      home: const MainNavigation(),
     );
   }
 }
