@@ -1,317 +1,67 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/saved_verse.dart';
-import '../services/bible_service.dart';
-import '../services/library_service.dart';
+class HighlightProvider extends ChangeNotifier {
+  final Map<String, Color> _highlights = {};
 
-class BibleScreen extends StatefulWidget {
-  final String book;
-  final int chapter;
-  final int bookIndex;
-  final int totalChapters;
+  Map<String, Color> get highlights => _highlights;
 
-  // NEW: verse to scroll to
-  final int? verse;
+  Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
 
-  const BibleScreen({
-    super.key,
-    required this.book,
-    required this.chapter,
-    required this.bookIndex,
-    required this.totalChapters,
-    this.verse,
-  });
+    final data = prefs.getStringList("highlights") ?? [];
 
-  @override
-  State<BibleScreen> createState() => _BibleScreenState();
-}
+    _highlights.clear();
 
-class _BibleScreenState extends State<BibleScreen> {
-  late int currentChapter;
+    for (final item in data) {
+      final parts = item.split("|");
 
-  List<String> verses = [];
-
-  bool loading = true;
-
-  final ScrollController _scrollController = ScrollController();
-
-  final List<GlobalKey> _verseKeys = [];
-
-  @override
-  void initState() {
-    super.initState();
-    currentChapter = widget.chapter;
-    loadChapter();
-  }
-
-  Future<void> loadChapter() async {
-    setState(() {
-      loading = true;
-    });
-
-    try {
-      verses = await BibleService.getChapter(
-        widget.bookIndex,
-        currentChapter - 1,
-      );
-
-      _verseKeys
-        ..clear()
-        ..addAll(
-          List.generate(
-            verses.length,
-            (_) => GlobalKey(),
-          ),
-        );
-    } catch (e) {
-      verses = ["Error loading chapter:\n$e"];
+      if (parts.length == 2) {
+        _highlights[parts[0]] =
+            Color(int.parse(parts[1]));
+      }
     }
 
-    setState(() {
-      loading = false;
-    });
-
-    if (widget.verse != null &&
-        widget.chapter == currentChapter &&
-        widget.verse! <= _verseKeys.length) {
-      Future.delayed(const Duration(milliseconds: 400), () {
-        final context =
-            _verseKeys[widget.verse! - 1].currentContext;
-
-        if (context != null) {
-          Scrollable.ensureVisible(
-            context,
-            duration: const Duration(milliseconds: 700),
-            curve: Curves.easeInOut,
-          );
-        }
-      });
-    }
+    notifyListeners();
   }
 
-  void previousChapter() {
-    if (currentChapter > 1) {
-      currentChapter--;
-      loadChapter();
-    }
-  }
-
-  void nextChapter() {
-    if (currentChapter < widget.totalChapters) {
-      currentChapter++;
-      loadChapter();
-    }
-  }
-
-  Future<void> showVerseMenu(
-    int verseNumber,
-    String verseText,
+  Future<void> highlightVerse(
+    String key,
+    Color color,
   ) async {
-    final verse = SavedVerse(
-      book: widget.book,
-      chapter: currentChapter,
-      verse: verseNumber,
-      text: verseText,
-    );
+    _highlights[key] = color;
 
-    await showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.bookmark),
-                title: const Text("Bookmark"),
-                onTap: () async {
-                  await LibraryService.addBookmark(verse);
+    await _save();
 
-                  if (context.mounted) {
-                    Navigator.pop(context);
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Verse bookmarked"),
-                      ),
-                    );
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.favorite),
-                title: const Text("Favorite"),
-                onTap: () async {
-                  await LibraryService.addFavorite(verse);
-
-                  if (context.mounted) {
-                    Navigator.pop(context);
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Added to favorites"),
-                      ),
-                    );
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.copy),
-                title: const Text("Copy Verse"),
-                onTap: () async {
-                  await Clipboard.setData(
-                    ClipboardData(
-                      text:
-                          "${widget.book} $currentChapter:$verseNumber\n\n$verseText",
-                    ),
-                  );
-
-                  if (context.mounted) {
-                    Navigator.pop(context);
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Verse copied"),
-                      ),
-                    );
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.share),
-                title: const Text("Share Verse"),
-                onTap: () async {
-                  await Share.share(
-                    "${widget.book} $currentChapter:$verseNumber\n\n$verseText",
-                  );
-
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.close),
-                title: const Text("Cancel"),
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    notifyListeners();
   }
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("${widget.book} $currentChapter"),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
-      ),
-      body: loading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: verses.length,
-                    itemBuilder: (context, index) {
-                      final verseNumber = index + 1;
 
-                      final bool isSelected =
-                          widget.verse == verseNumber &&
-                          widget.chapter == currentChapter;
+  Future<void> removeHighlight(
+    String key,
+  ) async {
+    _highlights.remove(key);
 
-                      return Container(
-                        key: _verseKeys[index],
-                        margin: const EdgeInsets.only(bottom: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? Colors.yellow.shade200
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(10),
-                          onLongPress: () {
-                            showVerseMenu(
-                              verseNumber,
-                              verses[index],
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(10),
-                            child: RichText(
-                              text: TextSpan(
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.black,
-                                  height: 1.8,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: "$verseNumber ",
-                                    style: const TextStyle(
-                                      color: Colors.purple,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: verses[index],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    border: const Border(
-                      top: BorderSide(color: Colors.grey),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: currentChapter == 1
-                              ? null
-                              : previousChapter,
-                          icon: const Icon(Icons.arrow_back),
-                          label: const Text("Previous"),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: currentChapter ==
-                                  widget.totalChapters
-                              ? null
-                              : nextChapter,
-                          icon: const Icon(Icons.arrow_forward),
-                          label: const Text("Next"),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+    await _save();
+
+    notifyListeners();
+  }
+
+  Color? getHighlight(String key) {
+    return _highlights[key];
+  }
+
+  Future<void> _save() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final List<String> data = [];
+
+    _highlights.forEach((key, color) {
+      data.add("$key|${color.value}");
+    });
+
+    await prefs.setStringList(
+      "highlights",
+      data,
     );
   }
 }
