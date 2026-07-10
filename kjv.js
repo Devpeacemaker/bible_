@@ -91,6 +91,35 @@ class SettingsService {
 
   static Future<String> getBibleVersion() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString("bibleVersion") ?? "KJV";
+    return prefs.getString("bibleVersion") ?? "kjv";
+  }
+
+  // =========================
+  // HIGHLIGHT COLOR
+  // =========================
+
+  static Future<void> saveHighlightColor(Color color) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt("highlightColor", color.value);
+  }
+
+  static Future<Color> getHighlightColor() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = prefs.getInt("highlightColor") ?? Colors.yellow.value;
+    return Color(value);
+  }
+
+  // =========================
+  // PREMIUM
+  // =========================
+
+  static Future<void> activatePremium() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("premium", true);
+  }
+
+  static Future<bool> isPremium() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool("premium") ?? false;
   }
 }
