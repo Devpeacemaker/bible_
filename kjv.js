@@ -1,45 +1,68 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
-class TranslationProvider extends ChangeNotifier {
-  String _translation = "KJV";
-  bool _premium = false;
+import 'providers/settings_provider.dart';
+import 'providers/highlight_provider.dart';
+import 'providers/translation_provider.dart';
 
-  String get translation => _translation;
-  bool get premium => _premium;
+import 'screens/main_navigation.dart';
 
-  Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-    _translation = prefs.getString("translation") ?? "KJV";
-    _premium = prefs.getBool("premium") ?? false;
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.load();
 
-    notifyListeners();
-  }
+  final highlightProvider = HighlightProvider();
+  await highlightProvider.load();
 
-  Future<void> setTranslation(String version) async {
-    _translation = version;
+  final translationProvider = TranslationProvider();
+  await translationProvider.load();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("translation", version);
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(
+          value: settingsProvider,
+        ),
+        ChangeNotifierProvider.value(
+          value: highlightProvider,
+        ),
+        ChangeNotifierProvider.value(
+          value: translationProvider,
+        ),
+      ],
+      child: const PeaceMBibleApp(),
+    ),
+  );
+}
 
-    notifyListeners();
-  }
+class PeaceMBibleApp extends StatelessWidget {
+  const PeaceMBibleApp({super.key});
 
-  Future<void> setPremium(bool value) async {
-    _premium = value;
+  @override
+  Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("premium", value);
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Peace M Bible',
 
-    notifyListeners();
-  }
+      themeMode: settings.themeMode,
 
-  bool isLocked(String version) {
-    if (version == "KJV") {
-      return false;
-    }
+      theme: ThemeData(
+        colorSchemeSeed: Colors.deepPurple,
+        useMaterial3: true,
+        brightness: Brightness.light,
+      ),
 
-    return !_premium;
+      darkTheme: ThemeData(
+        colorSchemeSeed: Colors.deepPurple,
+        useMaterial3: true,
+        brightness: Brightness.dark,
+      ),
+
+      home: const MainNavigation(),
+    );
   }
 }
