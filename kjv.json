@@ -1,135 +1,466 @@
 import 'package:flutter/material.dart';
-import '../services/bible_service.dart';
-import '../data/bible_books.dart';
-import 'bible_screen.dart';
 
-class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
-
-  @override
-  State<SearchScreen> createState() => _SearchScreenState();
-}
-
-class _SearchScreenState extends State<SearchScreen> {
-  final TextEditingController controller = TextEditingController();
-
-  List<Map<String, dynamic>> results = [];
-  bool loading = false;
-
-  Future<void> search(String text) async {
-    if (text.trim().isEmpty) {
-      setState(() {
-        results = [];
-      });
-      return;
-    }
-
-    setState(() {
-      loading = true;
-    });
-
-    final data = await BibleService.searchBible(text);
-
-    setState(() {
-      results = data;
-      loading = false;
-    });
-  }
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3E5F5),
-      appBar: AppBar(
-        title: const Text("Search Bible"),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: controller,
-              onChanged: search,
-              decoration: InputDecoration(
-                hintText: "Search the whole Bible...",
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
+      backgroundColor: const Color(0xffF5F5F5),
+
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: 25),
+          children: [
+
+            // HEADER
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 25, 20, 30),
+              decoration: const BoxDecoration(
+                color: Color(0xff5E35B1),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(28),
+                  bottomRight: Radius.circular(28),
                 ),
+              ),
+
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  const Text(
+                    "Good Morning 👋",
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 17,
+                    ),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  const Text(
+                    "Peace M Bible",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+
+                    child: const TextField(
+                      decoration: InputDecoration(
+                        hintText: "Search the Bible...",
+                        prefixIcon: Icon(Icons.search),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.all(15),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+                        // VERSE OF THE DAY
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.auto_stories,
+                            color: Colors.deepPurple,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            "Verse of the Day",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.deepPurple,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: 16),
+
+                      Text(
+                        '"The Lord is my shepherd; I shall not want."',
+                        style: TextStyle(
+                          fontSize: 18,
+                          height: 1.7,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+
+                      SizedBox(height: 10),
+
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          "Psalm 23:1",
+                          style: TextStyle(
+                            color: Colors.deepPurple,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            // CONTINUE READING
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: Card(
+                color: const Color(0xffEDE7F6),
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Continue Reading",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      const Text(
+                        "John Chapter 3",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+
+                      const SizedBox(height: 15),
+
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {},
+                          icon: const Icon(Icons.play_arrow),
+                          label: const Text("Continue Reading"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            // QUICK ACTIONS
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: const Text(
+                "Quick Actions",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 14,
+                mainAxisSpacing: 14,
+                childAspectRatio: 1.4,
+                children: [
+
+                  _QuickCard(
+                    icon: Icons.calendar_month,
+                    title: "Reading Plan",
+                  ),
+
+                  _QuickCard(
+                    icon: Icons.headphones,
+                    title: "Audio Bible",
+                  ),
+
+                  _QuickCard(
+                    icon: Icons.bookmark,
+                    title: "Bookmarks",
+                  ),
+
+                  _QuickCard(
+                    icon: Icons.note_alt,
+                    title: "Notes",
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+                  // BIBLE BOOKS
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 18),
+  child: const Text(
+    "Bible Books",
+    style: TextStyle(
+      fontSize: 22,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+),
+
+const SizedBox(height: 15),
+
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 18),
+  child: GridView.count(
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    crossAxisCount: 3,
+    crossAxisSpacing: 12,
+    mainAxisSpacing: 12,
+    childAspectRatio: 1.5,
+    children: const [
+
+      _BookCard(title: "Genesis"),
+      _BookCard(title: "Exodus"),
+      _BookCard(title: "Leviticus"),
+
+      _BookCard(title: "Numbers"),
+      _BookCard(title: "Deuteronomy"),
+      _BookCard(title: "Joshua"),
+
+      _BookCard(title: "Psalms"),
+      _BookCard(title: "Proverbs"),
+      _BookCard(title: "Isaiah"),
+
+      _BookCard(title: "Matthew"),
+      _BookCard(title: "Mark"),
+      _BookCard(title: "John"),
+    ],
+  ),
+),
+
+const SizedBox(height: 20),
+
+// BIBLE VERSION
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 18),
+  child: Card(
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(18),
+    ),
+    child: ListTile(
+      leading: const CircleAvatar(
+        backgroundColor: Colors.deepPurple,
+        child: Icon(
+          Icons.language,
+          color: Colors.white,
+        ),
+      ),
+      title: const Text(
+        "Bible Version",
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      subtitle: const Text("King James Version (KJV)"),
+      trailing: ElevatedButton(
+        onPressed: () {},
+        child: const Text("Change"),
+      ),
+    ),
+  ),
+),
+
+const SizedBox(height: 20),
+
+// PREMIUM FEATURES
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 18),
+  child: Card(
+    color: Colors.amber.shade50,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(18),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+
+          const Row(
+            children: [
+
+              Icon(
+                Icons.workspace_premium,
+                color: Colors.orange,
+              ),
+
+              SizedBox(width: 8),
+
+              Text(
+                "Premium Features",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 15),
+
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: const [
+
+              Chip(label: Text("Audio Bible")),
+
+              Chip(label: Text("Reading Plans")),
+
+              Chip(label: Text("Kiswahili")),
+
+              Chip(label: Text("Kamba")),
+
+              Chip(label: Text("Kikuyu")),
+
+              Chip(label: Text("Kalenjin")),
+
+              Chip(label: Text("Dark Mode")),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.star),
+              label: const Text("Upgrade to Premium"),
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+),
+
+const SizedBox(height: 30),
+class _QuickCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+
+  const _QuickCard({
+    required this.icon,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.deepPurple,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () {},
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: Colors.white,
+              size: 36,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BookCard extends StatelessWidget {
+  final String title;
+
+  const _BookCard({
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      elevation: 2,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Opening $title..."),
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        },
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
               ),
             ),
           ),
-          if (loading)
-            const Expanded(
-              child: Center(
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else if (results.isEmpty)
-            const Expanded(
-              child: Center(
-                child: Text(
-                  "Search any word like faith, love, Jesus...",
-                  style: TextStyle(fontSize: 18),
-                ),
-              ),
-            )
-          else
-            Expanded(
-              child: ListView.builder(
-                itemCount: results.length,
-                itemBuilder: (context, index) {
-                  final verse = results[index];
-
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.purple,
-                        child: Text(
-                          verse["verse"].toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      title: Text(
-                        "${BibleBooks.allBooks[verse["bookIndex"]]} "
-                        "${verse["chapter"]}:${verse["verse"]}",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      subtitle: Text(verse["text"]),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => BibleScreen(
-                              book: BibleBooks.allBooks[verse["bookIndex"]],
-                              chapter: verse["chapter"],
-                              bookIndex: verse["bookIndex"],
-                              totalChapters: BibleBooks.chapterCounts[
-                                  verse["bookIndex"]],
-                              verse: verse["verse"], // ✅ Added
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
