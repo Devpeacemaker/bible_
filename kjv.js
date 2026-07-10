@@ -1,23 +1,29 @@
-import 'package:shared_preferences/shared_preferences.dart';
+name: peace_m_bible
+description: "A new Flutter project."
+publish_to: 'none'
 
-class SettingsService {
-  static Future<void> saveTheme(String theme) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("theme", theme);
-  }
+version: 1.0.0+1
 
-  static Future<String> getTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString("theme") ?? "System";
-  }
+environment:
+  sdk: ^3.10.8
 
-  static Future<void> saveFontSize(double size) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble("fontSize", size);
-  }
+dependencies:
+  flutter:
+    sdk: flutter
 
-  static Future<double> getFontSize() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble("fontSize") ?? 18;
-  }
-}
+  cupertino_icons: ^1.0.8
+
+  shared_preferences: ^2.2.3
+  uauid: ^4.5.1
+  share_plus: ^11.0.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/bibles/
