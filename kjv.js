@@ -1,96 +1,186 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-class SettingsService {
-  // =========================
-  // THEME
-  // =========================
+class VersionScreen extends StatelessWidget {
+  const VersionScreen({super.key});
 
-  static Future<void> saveThemeMode(ThemeMode mode) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("theme", mode.name);
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xffF5F5F5),
+
+      appBar: AppBar(
+        title: const Text("Premium"),
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+        centerTitle: true,
+      ),
+
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.deepPurple,
+              borderRadius: BorderRadius.circular(20),
+            ),
+
+            child: const Column(
+              children: [
+
+                Icon(
+                  Icons.workspace_premium,
+                  color: Colors.amber,
+                  size: 70,
+                ),
+
+                SizedBox(height: 15),
+
+                Text(
+                  "Peace M Bible Premium",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 25,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                SizedBox(height: 10),
+
+                Text(
+                  "Unlock premium Bible translations and powerful study features.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    height: 1.5,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 25),
+          premiumCard(
+            context,
+            icon: Icons.language,
+            title: "English Bible (ENG)",
+            subtitle:
+                "Unlock the complete English Bible translation.",
+          ),
+
+          const SizedBox(height: 15),
+
+          premiumCard(
+            context,
+            icon: Icons.public,
+            title: "Kiswahili Bible (SWA)",
+            subtitle:
+                "Soma Biblia kwa Kiswahili.",
+          ),
+
+          const SizedBox(height: 15),
+
+          premiumCard(
+            context,
+            icon: Icons.note_alt_outlined,
+            title: "Bible Notes",
+            subtitle:
+                "Write and organize personal notes for every verse.",
+          ),
+
+          const SizedBox(height: 15),
+
+          premiumCard(
+            context,
+            icon: Icons.headphones,
+            title: "Audio Bible",
+            subtitle:
+                "Listen to the Bible anytime, anywhere.",
+          ),
+
+          const SizedBox(height: 35),
+
+          SizedBox(
+            width: double.infinity,
+            height: 55,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      "Premium subscription coming soon.",
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.workspace_premium),
+              label: const Text(
+                "Upgrade to Premium",
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
   }
 
-  static Future<ThemeMode> getThemeMode() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    switch (prefs.getString("theme")) {
-      case "light":
-        return ThemeMode.light;
-      case "dark":
-        return ThemeMode.dark;
-      default:
-        return ThemeMode.system;
-    }
-  }
-
-  // =========================
-  // FONT SIZE
-  // =========================
-
-  static Future<void> saveFontSize(double size) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble("fontSize", size);
-  }
-
-  static Future<double> getFontSize() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble("fontSize") ?? 18;
-  }
-
-  // =========================
-  // DAILY VERSE
-  // =========================
-
-  static Future<void> saveDailyVerse(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("dailyVerse", value);
-  }
-
-  static Future<bool> getDailyVerse() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool("dailyVerse") ?? true;
-  }
-
-  // =========================
-  // READING SOUND
-  // =========================
-
-  static Future<void> saveSoundEnabled(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("soundEnabled", value);
-  }
-
-  static Future<bool> getSoundEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool("soundEnabled") ?? true;
-  }
-
-  // =========================
-  // KEEP SCREEN AWAKE
-  // =========================
-
-  static Future<void> saveKeepScreenOn(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("keepScreenOn", value);
-  }
-
-  static Future<bool> getKeepScreenOn() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool("keepScreenOn") ?? false;
-  }
-
-  // =========================
-  // DEFAULT BIBLE VERSION
-  // =========================
-
-  static Future<void> saveBibleVersion(String version) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("bibleVersion", version);
-  }
-
-  static Future<String> getBibleVersion() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString("bibleVersion") ?? "KJV";
+  Widget premiumCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
+        leading: CircleAvatar(
+          radius: 28,
+          backgroundColor: Colors.deepPurple.shade100,
+          child: Icon(
+            icon,
+            color: Colors.deepPurple,
+          ),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+          ),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(subtitle),
+        ),
+        trailing: const Icon(
+          Icons.lock,
+          color: Colors.orange,
+        ),
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("$title is available in Premium."),
+            ),
+          );
+        },
+      ),
+    );
   }
 }
