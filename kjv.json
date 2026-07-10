@@ -12,12 +12,16 @@ class BibleScreen extends StatefulWidget {
   final int bookIndex;
   final int totalChapters;
 
+  // NEW: verse to scroll to
+  final int? verse;
+
   const BibleScreen({
     super.key,
     required this.book,
     required this.chapter,
     required this.bookIndex,
     required this.totalChapters,
+    this.verse,
   });
 
   @override
@@ -30,6 +34,10 @@ class _BibleScreenState extends State<BibleScreen> {
   List<String> verses = [];
 
   bool loading = true;
+
+  final ScrollController _scrollController = ScrollController();
+
+  final List<GlobalKey> _verseKeys = [];
 
   @override
   void initState() {
@@ -48,6 +56,15 @@ class _BibleScreenState extends State<BibleScreen> {
         widget.bookIndex,
         currentChapter - 1,
       );
+
+      _verseKeys
+        ..clear()
+        ..addAll(
+          List.generate(
+            verses.length,
+            (_) => GlobalKey(),
+          ),
+        );
     } catch (e) {
       verses = ["Error loading chapter:\n$e"];
     }
@@ -55,6 +72,23 @@ class _BibleScreenState extends State<BibleScreen> {
     setState(() {
       loading = false;
     });
+
+    if (widget.verse != null &&
+        widget.chapter == currentChapter &&
+        widget.verse! <= _verseKeys.length) {
+      Future.delayed(const Duration(milliseconds: 400), () {
+        final context =
+            _verseKeys[widget.verse! - 1].currentContext;
+
+        if (context != null) {
+          Scrollable.ensureVisible(
+            context,
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
   }
 
   void previousChapter() {
@@ -72,9 +106,9 @@ class _BibleScreenState extends State<BibleScreen> {
   }
 
   Future<void> showVerseMenu(
-      int verseNumber,
-      String verseText,
-      ) async {
+    int verseNumber,
+    String verseText,
+  ) async {
     final verse = SavedVerse(
       book: widget.book,
       chapter: currentChapter,
@@ -171,7 +205,6 @@ class _BibleScreenState extends State<BibleScreen> {
       },
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -188,40 +221,55 @@ class _BibleScreenState extends State<BibleScreen> {
               children: [
                 Expanded(
                   child: ListView.builder(
+                    controller: _scrollController,
                     padding: const EdgeInsets.all(16),
                     itemCount: verses.length,
                     itemBuilder: (context, index) {
                       final verseNumber = index + 1;
 
-                      return InkWell(
-                        onLongPress: () {
-                          showVerseMenu(
-                            verseNumber,
-                            verses[index],
-                          );
-                        },
-                        child: Padding(
-                          padding:
-                              const EdgeInsets.only(bottom: 14),
-                          child: RichText(
-                            text: TextSpan(
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: Colors.black,
-                                height: 1.8,
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: "$verseNumber ",
-                                  style: const TextStyle(
-                                    color: Colors.purple,
-                                    fontWeight: FontWeight.bold,
+                      final bool isSelected =
+                          widget.verse == verseNumber &&
+                          widget.chapter == currentChapter;
+
+                      return Container(
+                        key: _verseKeys[index],
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.yellow.shade200
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onLongPress: () {
+                            showVerseMenu(
+                              verseNumber,
+                              verses[index],
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: RichText(
+                              text: TextSpan(
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.black,
+                                  height: 1.8,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: "$verseNumber ",
+                                    style: const TextStyle(
+                                      color: Colors.purple,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                                TextSpan(
-                                  text: verses[index],
-                                ),
-                              ],
+                                  TextSpan(
+                                    text: verses[index],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -251,11 +299,10 @@ class _BibleScreenState extends State<BibleScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed:
-                              currentChapter ==
-                                      widget.totalChapters
-                                  ? null
-                                  : nextChapter,
+                          onPressed: currentChapter ==
+                                  widget.totalChapters
+                              ? null
+                              : nextChapter,
                           icon: const Icon(Icons.arrow_forward),
                           label: const Text("Next"),
                         ),
