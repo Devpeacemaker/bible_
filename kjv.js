@@ -1,67 +1,61 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
-class HighlightProvider extends ChangeNotifier {
-  final Map<String, Color> _highlights = {};
+import 'providers/settings_provider.dart';
+import 'providers/highlight_provider.dart';
 
-  Map<String, Color> get highlights => _highlights;
+import 'screens/main_navigation.dart';
 
-  Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-    final data = prefs.getStringList("highlights") ?? [];
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.load();
 
-    _highlights.clear();
+  final highlightProvider = HighlightProvider();
+  await highlightProvider.load();
 
-    for (final item in data) {
-      final parts = item.split("|");
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(
+          value: settingsProvider,
+        ),
+        ChangeNotifierProvider.value(
+          value: highlightProvider,
+        ),
+      ],
+      child: const PeaceMBibleApp(),
+    ),
+  );
+}
 
-      if (parts.length == 2) {
-        _highlights[parts[0]] =
-            Color(int.parse(parts[1]));
-      }
-    }
+class PeaceMBibleApp extends StatelessWidget {
+  const PeaceMBibleApp({super.key});
 
-    notifyListeners();
-  }
+  @override
+  Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
 
-  Future<void> highlightVerse(
-    String key,
-    Color color,
-  ) async {
-    _highlights[key] = color;
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Peace M Bible',
 
-    await _save();
+      themeMode: settings.themeMode,
 
-    notifyListeners();
-  }
+      theme: ThemeData(
+        colorSchemeSeed: Colors.deepPurple,
+        useMaterial3: true,
+        brightness: Brightness.light,
+      ),
 
-  Future<void> removeHighlight(
-    String key,
-  ) async {
-    _highlights.remove(key);
+      darkTheme: ThemeData(
+        colorSchemeSeed: Colors.deepPurple,
+        useMaterial3: true,
+        brightness: Brightness.dark,
+      ),
 
-    await _save();
-
-    notifyListeners();
-  }
-
-  Color? getHighlight(String key) {
-    return _highlights[key];
-  }
-
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final List<String> data = [];
-
-    _highlights.forEach((key, color) {
-      data.add("$key|${color.value}");
-    });
-
-    await prefs.setStringList(
-      "highlights",
-      data,
+      home: const MainNavigation(),
     );
   }
 }
