@@ -1,94 +1,317 @@
-import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
-class BibleService {
-  static List<dynamic>? _books;
-  static String _currentVersion = "kjv";
+import '../models/saved_verse.dart';
+import '../services/bible_service.dart';
+import '../services/library_service.dart';
 
-  /// Current loaded version
-  static String get currentVersion => _currentVersion;
+class BibleScreen extends StatefulWidget {
+  final String book;
+  final int chapter;
+  final int bookIndex;
+  final int totalChapters;
 
-  /// Change Bible version
-  static Future<void> setVersion(String version) async {
-    if (_currentVersion == version && _books != null) return;
+  // NEW: verse to scroll to
+  final int? verse;
 
-    _currentVersion = version;
-    _books = null;
+  const BibleScreen({
+    super.key,
+    required this.book,
+    required this.chapter,
+    required this.bookIndex,
+    required this.totalChapters,
+    this.verse,
+  });
 
-    await loadBible();
+  @override
+  State<BibleScreen> createState() => _BibleScreenState();
+}
+
+class _BibleScreenState extends State<BibleScreen> {
+  late int currentChapter;
+
+  List<String> verses = [];
+
+  bool loading = true;
+
+  final ScrollController _scrollController = ScrollController();
+
+  final List<GlobalKey> _verseKeys = [];
+
+  @override
+  void initState() {
+    super.initState();
+    currentChapter = widget.chapter;
+    loadChapter();
   }
 
-  /// Load selected Bible
-  static Future<void> loadBible() async {
-    if (_books != null) return;
+  Future<void> loadChapter() async {
+    setState(() {
+      loading = true;
+    });
 
-    String file = "assets/bibles/kjv.json";
+    try {
+      verses = await BibleService.getChapter(
+        widget.bookIndex,
+        currentChapter - 1,
+      );
 
-    switch (_currentVersion) {
-      case "eng":
-        file = "assets/bibles/eng.json";
-        break;
-
-      case "swa":
-        file = "assets/bibles/swa.json";
-        break;
-
-      case "kjv":
-      default:
-        file = "assets/bibles/kjv.json";
+      _verseKeys
+        ..clear()
+        ..addAll(
+          List.generate(
+            verses.length,
+            (_) => GlobalKey(),
+          ),
+        );
+    } catch (e) {
+      verses = ["Error loading chapter:\n$e"];
     }
 
-    final jsonString = await rootBundle.loadString(file);
+    setState(() {
+      loading = false;
+    });
 
-    _books = json.decode(jsonString);
-  }
+    if (widget.verse != null &&
+        widget.chapter == currentChapter &&
+        widget.verse! <= _verseKeys.length) {
+      Future.delayed(const Duration(milliseconds: 400), () {
+        final context =
+            _verseKeys[widget.verse! - 1].currentContext;
 
-  /// Read chapter
-  static Future<List<String>> getChapter(
-    int bookIndex,
-    int chapterIndex,
-  ) async {
-    await loadBible();
-
-    final chapters = _books![bookIndex]["chapters"] as List;
-    final verses = chapters[chapterIndex] as List;
-
-    return verses.map((e) => e.toString()).toList();
-  }
-
-  /// Search selected Bible
-  static Future<List<Map<String, dynamic>>> searchBible(
-    String keyword,
-  ) async {
-    await loadBible();
-
-    keyword = keyword.toLowerCase();
-
-    List<Map<String, dynamic>> results = [];
-
-    for (int book = 0; book < _books!.length; book++) {
-      final bookData = _books![book];
-
-      final chapters = bookData["chapters"] as List;
-
-      for (int chapter = 0; chapter < chapters.length; chapter++) {
-        final verses = chapters[chapter] as List;
-
-        for (int verse = 0; verse < verses.length; verse++) {
-          final text = verses[verse].toString();
-
-          if (text.toLowerCase().contains(keyword)) {
-            results.add({
-              "bookIndex": book,
-              "chapter": chapter + 1,
-              "verse": verse + 1,
-              "text": text,
-            });
-          }
+        if (context != null) {
+          Scrollable.ensureVisible(
+            context,
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeInOut,
+          );
         }
-      }
+      });
     }
+  }
 
-    return results;
+  void previousChapter() {
+    if (currentChapter > 1) {
+      currentChapter--;
+      loadChapter();
+    }
+  }
+
+  void nextChapter() {
+    if (currentChapter < widget.totalChapters) {
+      currentChapter++;
+      loadChapter();
+    }
+  }
+
+  Future<void> showVerseMenu(
+    int verseNumber,
+    String verseText,
+  ) async {
+    final verse = SavedVerse(
+      book: widget.book,
+      chapter: currentChapter,
+      verse: verseNumber,
+      text: verseText,
+    );
+
+    await showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.bookmark),
+                title: const Text("Bookmark"),
+                onTap: () async {
+                  await LibraryService.addBookmark(verse);
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Verse bookmarked"),
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.favorite),
+                title: const Text("Favorite"),
+                onTap: () async {
+                  await LibraryService.addFavorite(verse);
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Added to favorites"),
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.copy),
+                title: const Text("Copy Verse"),
+                onTap: () async {
+                  await Clipboard.setData(
+                    ClipboardData(
+                      text:
+                          "${widget.book} $currentChapter:$verseNumber\n\n$verseText",
+                    ),
+                  );
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Verse copied"),
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share),
+                title: const Text("Share Verse"),
+                onTap: () async {
+                  await Share.share(
+                    "${widget.book} $currentChapter:$verseNumber\n\n$verseText",
+                  );
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.close),
+                title: const Text("Cancel"),
+                onTap: () {
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("${widget.book} $currentChapter"),
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
+      ),
+      body: loading
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: verses.length,
+                    itemBuilder: (context, index) {
+                      final verseNumber = index + 1;
+
+                      final bool isSelected =
+                          widget.verse == verseNumber &&
+                          widget.chapter == currentChapter;
+
+                      return Container(
+                        key: _verseKeys[index],
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.yellow.shade200
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onLongPress: () {
+                            showVerseMenu(
+                              verseNumber,
+                              verses[index],
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: RichText(
+                              text: TextSpan(
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.black,
+                                  height: 1.8,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: "$verseNumber ",
+                                    style: const TextStyle(
+                                      color: Colors.purple,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: verses[index],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    border: const Border(
+                      top: BorderSide(color: Colors.grey),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: currentChapter == 1
+                              ? null
+                              : previousChapter,
+                          icon: const Icon(Icons.arrow_back),
+                          label: const Text("Previous"),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: currentChapter ==
+                                  widget.totalChapters
+                              ? null
+                              : nextChapter,
+                          icon: const Icon(Icons.arrow_forward),
+                          label: const Text("Next"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+    );
   }
 }
