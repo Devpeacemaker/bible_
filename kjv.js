@@ -1,237 +1,317 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
-import '../providers/settings_provider.dart';
+import '../models/saved_verse.dart';
+import '../services/bible_service.dart';
+import '../services/library_service.dart';
 
-class VersionScreen extends StatelessWidget {
-  const VersionScreen({super.key});
+class BibleScreen extends StatefulWidget {
+  final String book;
+  final int chapter;
+  final int bookIndex;
+  final int totalChapters;
+
+  // NEW: verse to scroll to
+  final int? verse;
+
+  const BibleScreen({
+    super.key,
+    required this.book,
+    required this.chapter,
+    required this.bookIndex,
+    required this.totalChapters,
+    this.verse,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context);
+  State<BibleScreen> createState() => _BibleScreenState();
+}
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+class _BibleScreenState extends State<BibleScreen> {
+  late int currentChapter;
 
-      appBar: AppBar(
-        title: const Text("Premium"),
-        centerTitle: true,
-      ),
+  List<String> verses = [];
 
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
+  bool loading = true;
 
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(20),
-            ),
+  final ScrollController _scrollController = ScrollController();
 
-            child: Column(
-              children: [
+  final List<GlobalKey> _verseKeys = [];
 
-                const Icon(
-                  Icons.workspace_premium,
-                  color: Colors.amber,
-                  size: 70,
-                ),
-
-                const SizedBox(height: 15),
-
-                Text(
-                  "Peace M Bible Premium",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: settings.fontSize + 7,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                Text(
-                  "Unlock premium Bible translations and powerful study features.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    height: 1.5,
-                    fontSize: settings.fontSize - 2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 25),
-
-
-premiumCard(
-  context,
-  settings,
-  icon: Icons.language,
-  title: "English Bible (ENG)",
-  subtitle: "Unlock the complete English Bible translation.",
-),
-
-const SizedBox(height: 15),
-
-premiumCard(
-  context,
-  settings,
-  icon: Icons.public,
-  title: "Kiswahili Bible (SWA)",
-  subtitle: "Soma Biblia kwa Kiswahili.",
-),
-
-const SizedBox(height: 15),
-
-premiumCard(
-  context,
-  settings,
-  icon: Icons.note_alt_outlined,
-  title: "Bible Notes",
-  subtitle: "Write and organize personal notes for every verse.",
-),
-
-const SizedBox(height: 15),
-
-premiumCard(
-  context,
-  settings,
-  icon: Icons.headphones,
-  title: "Audio Bible",
-  subtitle: "Listen to the Bible anytime, anywhere.",
-),
-
-const SizedBox(height: 35),
-
-SizedBox(
-  width: double.infinity,
-  height: 55,
-  child: ElevatedButton.icon(
-    style: ElevatedButton.styleFrom(
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-    ),
-    onPressed: () {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Premium subscription coming soon.",
-          ),
-        ),
-      );
-    },
-    icon: const Icon(Icons.workspace_premium),
-    label: Text(
-      "Upgrade to Premium",
-      style: TextStyle(
-        fontSize: settings.fontSize,
-        fontWeight: FontWeight.bold,
-      ),
-    ),
-  ),
-),
-
-const SizedBox(height: 30),
-        ],
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    currentChapter = widget.chapter;
+    loadChapter();
   }
-Widget premiumCard(
-  BuildContext context,
-  SettingsProvider settings, {
-  required IconData icon,
-  required String title,
-  required String subtitle,
-}) {
-  return Card(
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(18),
-    ),
-    child: ListTile(
-      contentPadding: const EdgeInsets.all(16),
 
-      leading: CircleAvatar(
-        radius: 28,
-        backgroundColor:
-            Theme.of(context).colorScheme.primaryContainer,
-        child: Icon(
-          icon,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-      ),
+  Future<void> loadChapter() async {
+    setState(() {
+      loading = true;
+    });
 
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: settings.fontSize - 1,
-        ),
-      ),
+    try {
+      verses = await BibleService.getChapter(
+        widget.bookIndex,
+        currentChapter - 1,
+      );
 
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: settings.fontSize - 3,
+      _verseKeys
+        ..clear()
+        ..addAll(
+          List.generate(
+            verses.length,
+            (_) => GlobalKey(),
           ),
-        ),
-      ),
+        );
+    } catch (e) {
+      verses = ["Error loading chapter:\n$e"];
+    }
 
-      trailing: const Icon(
-        Icons.lock,
-        color: Colors.orange,
-      ),
+    setState(() {
+      loading = false;
+    });
 
-      onTap: () {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: Text(
-              title,
-              style: TextStyle(
-                fontSize: settings.fontSize + 1,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            content: Text(
-              "$title is available with Peace M Bible Premium.",
-              style: TextStyle(
-                fontSize: settings.fontSize - 1,
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Close"),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
+    if (widget.verse != null &&
+        widget.chapter == currentChapter &&
+        widget.verse! <= _verseKeys.length) {
+      Future.delayed(const Duration(milliseconds: 400), () {
+        final context =
+            _verseKeys[widget.verse! - 1].currentContext;
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        "Premium subscription coming soon.",
+        if (context != null) {
+          Scrollable.ensureVisible(
+            context,
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
+  }
+
+  void previousChapter() {
+    if (currentChapter > 1) {
+      currentChapter--;
+      loadChapter();
+    }
+  }
+
+  void nextChapter() {
+    if (currentChapter < widget.totalChapters) {
+      currentChapter++;
+      loadChapter();
+    }
+  }
+
+  Future<void> showVerseMenu(
+    int verseNumber,
+    String verseText,
+  ) async {
+    final verse = SavedVerse(
+      book: widget.book,
+      chapter: currentChapter,
+      verse: verseNumber,
+      text: verseText,
+    );
+
+    await showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.bookmark),
+                title: const Text("Bookmark"),
+                onTap: () async {
+                  await LibraryService.addBookmark(verse);
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Verse bookmarked"),
                       ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.favorite),
+                title: const Text("Favorite"),
+                onTap: () async {
+                  await LibraryService.addFavorite(verse);
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Added to favorites"),
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.copy),
+                title: const Text("Copy Verse"),
+                onTap: () async {
+                  await Clipboard.setData(
+                    ClipboardData(
+                      text:
+                          "${widget.book} $currentChapter:$verseNumber\n\n$verseText",
                     ),
                   );
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Verse copied"),
+                      ),
+                    );
+                  }
                 },
-                child: const Text("Upgrade"),
+              ),
+              ListTile(
+                leading: const Icon(Icons.share),
+                title: const Text("Share Verse"),
+                onTap: () async {
+                  await Share.share(
+                    "${widget.book} $currentChapter:$verseNumber\n\n$verseText",
+                  );
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.close),
+                title: const Text("Cancel"),
+                onTap: () {
+                  Navigator.pop(context);
+                },
               ),
             ],
           ),
         );
       },
-    ),
-  );
+    );
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("${widget.book} $currentChapter"),
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
+      ),
+      body: loading
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: verses.length,
+                    itemBuilder: (context, index) {
+                      final verseNumber = index + 1;
+
+                      final bool isSelected =
+                          widget.verse == verseNumber &&
+                          widget.chapter == currentChapter;
+
+                      return Container(
+                        key: _verseKeys[index],
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.yellow.shade200
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onLongPress: () {
+                            showVerseMenu(
+                              verseNumber,
+                              verses[index],
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: RichText(
+                              text: TextSpan(
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.black,
+                                  height: 1.8,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: "$verseNumber ",
+                                    style: const TextStyle(
+                                      color: Colors.purple,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: verses[index],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    border: const Border(
+                      top: BorderSide(color: Colors.grey),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: currentChapter == 1
+                              ? null
+                              : previousChapter,
+                          icon: const Icon(Icons.arrow_back),
+                          label: const Text("Previous"),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: currentChapter ==
+                                  widget.totalChapters
+                              ? null
+                              : nextChapter,
+                          icon: const Icon(Icons.arrow_forward),
+                          label: const Text("Next"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
 }
