@@ -140,6 +140,10 @@ SizedBox(
 ),
 
 const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
 Widget premiumCard(
   BuildContext context,
   SettingsProvider settings, {
