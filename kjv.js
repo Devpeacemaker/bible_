@@ -1,56 +1,28 @@
 import 'package:flutter/material.dart';
+import '../services/settings_service.dart';
 
-import 'screens/main_navigation.dart';
-import 'services/settings_service.dart';
+class SettingsProvider extends ChangeNotifier {
+  ThemeMode _themeMode = ThemeMode.system;
+  double _fontSize = 18;
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const PeaceMBibleApp());
-}
+  ThemeMode get themeMode => _themeMode;
+  double get fontSize => _fontSize;
 
-class PeaceMBibleApp extends StatefulWidget {
-  const PeaceMBibleApp({super.key});
-
-  @override
-  State<PeaceMBibleApp> createState() => _PeaceMBibleAppState();
-}
-
-class _PeaceMBibleAppState extends State<PeaceMBibleApp> {
-  ThemeMode themeMode = ThemeMode.system;
-
-  @override
-  void initState() {
-    super.initState();
-    loadTheme();
+  Future<void> load() async {
+    _themeMode = await SettingsService.getThemeMode();
+    _fontSize = await SettingsService.getFontSize();
+    notifyListeners();
   }
 
-  Future<void> loadTheme() async {
-    themeMode = await SettingsService.getThemeMode();
-
-    setState(() {});
+  Future<void> setTheme(ThemeMode mode) async {
+    _themeMode = mode;
+    await SettingsService.saveThemeMode(mode);
+    notifyListeners();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: "Peace M Bible",
-
-      themeMode: themeMode,
-
-      theme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-        brightness: Brightness.light,
-      ),
-
-      darkTheme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-        brightness: Brightness.dark,
-      ),
-
-      home: const MainNavigation(),
-    );
+  Future<void> setFontSize(double size) async {
+    _fontSize = size;
+    await SettingsService.saveFontSize(size);
+    notifyListeners();
   }
 }
