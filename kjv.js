@@ -1,161 +1,64 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart';
 
-class PremiumDialog {
-  static Future<void> show(
-    BuildContext context, {
-    required String feature,
-  }) async {
-    return showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+class BibleService {
+  static List<dynamic>? _books;
 
-        title: const Row(
-          children: [
-            Icon(
-              Icons.workspace_premium,
-              color: Colors.amber,
-            ),
-            SizedBox(width: 10),
-            Text("Premium Feature"),
-          ],
-        ),
+  static Future<void> loadBible() async {
+    if (_books != null) return;
 
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            Text(
-              "$feature is available only in Peace M Bible Premium.",
-            ),
-
-            const SizedBox(height: 20),
-
-            const Text(
-              "Premium includes:",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            const ListTile(
-              leading: Icon(Icons.language),
-              title: Text("English Bible (ENG)"),
-            ),
-
-            const ListTile(
-              leading: Icon(Icons.public),
-              title: Text("Kiswahili Bible (SWA)"),
-            ),
-
-            const ListTile(
-              leading: Icon(Icons.note_alt),
-              title: Text("Bible Notes"),
-            ),
-
-            const ListTile(
-              leading: Icon(Icons.headphones),
-              title: Text("Audio Bible"),
-            ),
-          ],
-        ),
-
-        actions: [
-
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text("Later"),
-          ),
-
-          ElevatedButton.icon(
-            icon: const Icon(Icons.payment),
-            label: const Text("Upgrade"),
-
-            onPressed: () {
-              Navigator.pop(context);
-
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const PremiumPaymentScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+    final jsonString = await rootBundle.loadString(
+      'assets/bibles/kjv.json',
     );
+
+    _books = json.decode(jsonString);
   }
-}
 
-class PremiumPaymentScreen extends StatelessWidget {
-  const PremiumPaymentScreen({super.key});
+  static Future<List<String>> getChapter(
+    int bookIndex,
+    int chapterIndex,
+  ) async {
+    await loadBible();
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Upgrade to Premium"),
-      ),
+    final chapters = _books![bookIndex]["chapters"] as List;
+    final verses = chapters[chapterIndex] as List;
 
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
+    return verses.map((e) => e.toString()).toList();
+  }
 
-            const Icon(
-              Icons.workspace_premium,
-              size: 90,
-              color: Colors.amber,
-            ),
+  /// Search the whole Bible
+  static Future<List<Map<String, dynamic>>> searchBible(
+    String keyword,
+  ) async {
+    await loadBible();
 
-            const SizedBox(height: 20),
+    keyword = keyword.toLowerCase();
 
-            const Text(
-              "Peace M Bible Premium",
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+    List<Map<String, dynamic>> results = [];
 
-            const SizedBox(height: 20),
+    for (int book = 0; book < _books!.length; book++) {
+      final bookData = _books![book];
 
-            const Text(
-              "Unlock English Bible, Kiswahili Bible, Notes and Audio Bible.",
-              textAlign: TextAlign.center,
-            ),
+      final chapters = bookData["chapters"] as List;
 
-            const SizedBox(height: 40),
+      for (int chapter = 0; chapter < chapters.length; chapter++) {
+        final verses = chapters[chapter] as List;
 
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.phone_android),
-                label: const Text("Pay with M-PESA"),
+        for (int verse = 0; verse < verses.length; verse++) {
+          final text = verses[verse].toString();
 
-                onPressed: () {
+          if (text.toLowerCase().contains(keyword)) {
+            results.add({
+              "bookIndex": book,
+              "chapter": chapter + 1,
+              "verse": verse + 1,
+              "text": text,
+            });
+          }
+        }
+      }
+    }
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        "Daraja integration will be connected here.",
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return results;
   }
 }
