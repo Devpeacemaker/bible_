@@ -1,16 +1,73 @@
 import 'package:flutter/material.dart';
+
 import '../data/bible_books.dart';
+import '../services/api_service.dart';
+import '../services/user_service.dart';
+
 import 'chapter_screen.dart';
+import 'create_account_screen.dart';
+import 'subscription_screen.dart';
 
 class BooksScreen extends StatefulWidget {
   const BooksScreen({super.key});
 
   @override
-  State<BooksScreen> createState() => _BooksScreenState();
+  State<BooksScreen> createState() =>
+      _BooksScreenState();
 }
 
-class _BooksScreenState extends State<BooksScreen> {
+class _BooksScreenState
+    extends State<BooksScreen> {
   String search = "";
+
+  Future<bool> checkPremium() async {
+    final hasAccount =
+        await UserService.hasAccount();
+
+    if (!hasAccount) {
+      if (!mounted) return false;
+
+      final created = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              const CreateAccountScreen(),
+        ),
+      );
+
+      if (created != true) {
+        return false;
+      }
+    }
+
+    final user =
+        await UserService.getUser();
+
+    if (user == null) {
+      return false;
+    }
+
+    final premium =
+        await ApiService.premium(
+      user.phone,
+    );
+
+    if (!premium) {
+      if (!mounted) return false;
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              const SubscriptionScreen(),
+        ),
+      );
+
+      return false;
+    }
+
+    return true;
+  }
 
   int getChapterCount(String book) {
     const chapters = {
@@ -84,15 +141,22 @@ class _BooksScreenState extends State<BooksScreen> {
 
     return chapters[book] ?? 1;
   }
-
   @override
   Widget build(BuildContext context) {
     final oldBooks = BibleBooks.oldTestament
-        .where((b) => b.toLowerCase().contains(search.toLowerCase()))
+        .where(
+          (b) => b
+              .toLowerCase()
+              .contains(search.toLowerCase()),
+        )
         .toList();
 
     final newBooks = BibleBooks.newTestament
-        .where((b) => b.toLowerCase().contains(search.toLowerCase()))
+        .where(
+          (b) => b
+              .toLowerCase()
+              .contains(search.toLowerCase()),
+        )
         .toList();
 
     return Scaffold(
@@ -104,11 +168,15 @@ class _BooksScreenState extends State<BooksScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding:
+                const EdgeInsets.all(16),
             child: TextField(
-              decoration: const InputDecoration(
-                hintText: "Search Bible book...",
-                prefixIcon: Icon(Icons.search),
+              decoration:
+                  const InputDecoration(
+                hintText:
+                    "Search Bible book...",
+                prefixIcon:
+                    Icon(Icons.search),
               ),
               onChanged: (value) {
                 setState(() {
@@ -117,35 +185,56 @@ class _BooksScreenState extends State<BooksScreen> {
               },
             ),
           ),
+
           Expanded(
             child: ListView(
               children: [
                 const Padding(
-                  padding: EdgeInsets.all(8),
+                  padding:
+                      EdgeInsets.all(8),
                   child: Text(
                     "OLD TESTAMENT",
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.purple,
+                      fontWeight:
+                          FontWeight.bold,
+                      color:
+                          Colors.purple,
                     ),
                   ),
                 ),
+
                 ...oldBooks.map((book) {
-                  final index = BibleBooks.oldTestament.indexOf(book);
+                  final index = BibleBooks
+                      .oldTestament
+                      .indexOf(book);
 
                   return ListTile(
-                    leading: const Icon(Icons.menu_book),
+                    leading: const Icon(
+                      Icons.menu_book,
+                    ),
                     title: Text(book),
-                    subtitle:
-                        Text("${getChapterCount(book)} Chapters"),
-                    onTap: () {
+                    subtitle: Text(
+                      "${getChapterCount(book)} Chapters",
+                    ),
+                    onTap: () async {
+                      final allowed =
+                          await checkPremium();
+
+                      if (!allowed) return;
+
+                      if (!mounted) return;
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ChapterScreen(
+                          builder: (_) =>
+                              ChapterScreen(
                             book: book,
-                            totalChapters: getChapterCount(book),
-                            bookIndex: index,
+                            totalChapters:
+                                getChapterCount(
+                                    book),
+                            bookIndex:
+                                index,
                           ),
                         ),
                       );
@@ -154,33 +243,52 @@ class _BooksScreenState extends State<BooksScreen> {
                 }),
 
                 const Padding(
-                  padding: EdgeInsets.all(8),
+                  padding:
+                      EdgeInsets.all(8),
                   child: Text(
                     "NEW TESTAMENT",
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.purple,
+                      fontWeight:
+                          FontWeight.bold,
+                      color:
+                          Colors.purple,
                     ),
                   ),
                 ),
-
                 ...newBooks.map((book) {
                   final index =
-                      39 + BibleBooks.newTestament.indexOf(book);
+                      39 +
+                          BibleBooks
+                              .newTestament
+                              .indexOf(book);
 
                   return ListTile(
-                    leading: const Icon(Icons.menu_book),
+                    leading: const Icon(
+                      Icons.menu_book,
+                    ),
                     title: Text(book),
-                    subtitle:
-                        Text("${getChapterCount(book)} Chapters"),
-                    onTap: () {
+                    subtitle: Text(
+                      "${getChapterCount(book)} Chapters",
+                    ),
+                    onTap: () async {
+                      final allowed =
+                          await checkPremium();
+
+                      if (!allowed) return;
+
+                      if (!mounted) return;
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ChapterScreen(
+                          builder: (_) =>
+                              ChapterScreen(
                             book: book,
-                            totalChapters: getChapterCount(book),
-                            bookIndex: index,
+                            totalChapters:
+                                getChapterCount(
+                                    book),
+                            bookIndex:
+                                index,
                           ),
                         ),
                       );
