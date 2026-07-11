@@ -1,304 +1,197 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import '../data/bible_books.dart';
+import 'chapter_screen.dart';
 
-import '../providers/settings_provider.dart';
-import '../services/api_service.dart';
-import '../services/user_service.dart';
+class BooksScreen extends StatefulWidget {
+  const BooksScreen({super.key});
 
-import 'create_account_screen.dart';
-import 'subscription_screen.dart';
+  @override
+  State<BooksScreen> createState() => _BooksScreenState();
+}
 
-class VersionScreen extends StatelessWidget {
-  const VersionScreen({super.key});
+class _BooksScreenState extends State<BooksScreen> {
+  String search = "";
 
-  Future<void> openPremium(
-    BuildContext context,
-    String feature,
-  ) async {
-    final hasAccount =
-        await UserService.hasAccount();
+  int getChapterCount(String book) {
+    const chapters = {
+      "Genesis": 50,
+      "Exodus": 40,
+      "Leviticus": 27,
+      "Numbers": 36,
+      "Deuteronomy": 34,
+      "Joshua": 24,
+      "Judges": 21,
+      "Ruth": 4,
+      "1 Samuel": 31,
+      "2 Samuel": 24,
+      "1 Kings": 22,
+      "2 Kings": 25,
+      "1 Chronicles": 29,
+      "2 Chronicles": 36,
+      "Ezra": 10,
+      "Nehemiah": 13,
+      "Esther": 10,
+      "Job": 42,
+      "Psalms": 150,
+      "Proverbs": 31,
+      "Ecclesiastes": 12,
+      "Song of Solomon": 8,
+      "Isaiah": 66,
+      "Jeremiah": 52,
+      "Lamentations": 5,
+      "Ezekiel": 48,
+      "Daniel": 12,
+      "Hosea": 14,
+      "Joel": 3,
+      "Amos": 9,
+      "Obadiah": 1,
+      "Jonah": 4,
+      "Micah": 7,
+      "Nahum": 3,
+      "Habakkuk": 3,
+      "Zephaniah": 3,
+      "Haggai": 2,
+      "Zechariah": 14,
+      "Malachi": 4,
+      "Matthew": 28,
+      "Mark": 16,
+      "Luke": 24,
+      "John": 21,
+      "Acts": 28,
+      "Romans": 16,
+      "1 Corinthians": 16,
+      "2 Corinthians": 13,
+      "Galatians": 6,
+      "Ephesians": 6,
+      "Philippians": 4,
+      "Colossians": 4,
+      "1 Thessalonians": 5,
+      "2 Thessalonians": 3,
+      "1 Timothy": 6,
+      "2 Timothy": 4,
+      "Titus": 3,
+      "Philemon": 1,
+      "Hebrews": 13,
+      "James": 5,
+      "1 Peter": 5,
+      "2 Peter": 3,
+      "1 John": 5,
+      "2 John": 1,
+      "3 John": 1,
+      "Jude": 1,
+      "Revelation": 22,
+    };
 
-    if (!context.mounted) return;
-
-    if (!hasAccount) {
-      final created = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) =>
-              const CreateAccountScreen(),
-        ),
-      );
-
-      if (created == true &&
-          context.mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                const SubscriptionScreen(),
-          ),
-        );
-      }
-
-      return;
-    }
-
-    final user = await UserService.getUser();
-
-    if (user == null) return;
-
-    final premium =
-        await ApiService.premium(user.phone);
-
-    if (!context.mounted) return;
-
-    if (!premium) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) =>
-              const SubscriptionScreen(),
-        ),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text(
-          "Premium Active",
-        ),
-        content: Text(
-          "Opening $feature...",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-
-              // Premium feature
-              // Next part will open the
-              // correct premium screen.
-            },
-            child: const Text(
-              "Continue",
-            ),
-          ),
-        ],
-      ),
-    );
+    return chapters[book] ?? 1;
   }
 
   @override
   Widget build(BuildContext context) {
-    final settings =
-        Provider.of<SettingsProvider>(context);
+    final oldBooks = BibleBooks.oldTestament
+        .where((b) => b.toLowerCase().contains(search.toLowerCase()))
+        .toList();
+
+    final newBooks = BibleBooks.newTestament
+        .where((b) => b.toLowerCase().contains(search.toLowerCase()))
+        .toList();
 
     return Scaffold(
-      backgroundColor:
-          Theme.of(context).scaffoldBackgroundColor,
-
       appBar: AppBar(
-        title: const Text("Premium"),
-        centerTitle: true,
+        title: const Text("Bible Books"),
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
       ),
-
-      body: ListView(
-        padding: const EdgeInsets.all(20),
+      body: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color:
-                  Theme.of(context).colorScheme.primary,
-              borderRadius:
-                  BorderRadius.circular(20),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: "Search Bible book...",
+                prefixIcon: Icon(Icons.search),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  search = value;
+                });
+              },
             ),
-            child: Column(
+          ),
+          Expanded(
+            child: ListView(
               children: [
-                const Icon(
-                  Icons.workspace_premium,
-                  color: Colors.amber,
-                  size: 70,
+                const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Text(
+                    "OLD TESTAMENT",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.purple,
+                    ),
+                  ),
                 ),
+                ...oldBooks.map((book) {
+                  final index = BibleBooks.oldTestament.indexOf(book);
 
-                const SizedBox(height: 15),
+                  return ListTile(
+                    leading: const Icon(Icons.menu_book),
+                    title: Text(book),
+                    subtitle:
+                        Text("${getChapterCount(book)} Chapters"),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChapterScreen(
+                            book: book,
+                            totalChapters: getChapterCount(book),
+                            bookIndex: index,
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }),
 
-                Text(
-                  "Peace M Bible Premium",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize:
-                        settings.fontSize + 7,
-                    fontWeight:
-                        FontWeight.bold,
+                const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Text(
+                    "NEW TESTAMENT",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.purple,
+                    ),
                   ),
                 ),
 
-                const SizedBox(height: 10),
+                ...newBooks.map((book) {
+                  final index =
+                      39 + BibleBooks.newTestament.indexOf(book);
 
-                Text(
-                  "Unlock premium Bible translations and powerful study features.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    height: 1.5,
-                    fontSize:
-                        settings.fontSize - 2,
-                  ),
-                ),
+                  return ListTile(
+                    leading: const Icon(Icons.menu_book),
+                    title: Text(book),
+                    subtitle:
+                        Text("${getChapterCount(book)} Chapters"),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChapterScreen(
+                            book: book,
+                            totalChapters: getChapterCount(book),
+                            bookIndex: index,
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }),
               ],
             ),
           ),
-
-          const SizedBox(height: 25),
-
-          premiumCard(
-            context,
-            settings,
-            icon: Icons.language,
-            title: "English Bible (ENG)",
-            subtitle:
-                "Unlock the complete English Bible translation.",
-          ),
-
-          const SizedBox(height: 15),
-
-          premiumCard(
-            context,
-            settings,
-            icon: Icons.public,
-            title: "Kiswahili Bible (SWA)",
-            subtitle:
-                "Soma Biblia kwa Kiswahili.",
-          ),
-
-          const SizedBox(height: 15),
-
-          premiumCard(
-            context,
-            settings,
-            icon: Icons.note_alt_outlined,
-            title: "Bible Notes",
-            subtitle:
-                "Write and organize personal notes.",
-          ),
-
-          const SizedBox(height: 15),
-
-          premiumCard(
-            context,
-            settings,
-            icon: Icons.headphones,
-            title: "Audio Bible",
-            subtitle:
-                "Listen to the Bible anytime, anywhere.",
-          ),
-
-          const SizedBox(height: 35),
-
-          SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    Theme.of(context)
-                        .colorScheme
-                        .primary,
-                foregroundColor:
-                    Theme.of(context)
-                        .colorScheme
-                        .onPrimary,
-              ),
-              onPressed: () {
-                openPremium(
-                  context,
-                  "Peace M Bible Premium",
-                );
-              },
-              icon: const Icon(
-                Icons.workspace_premium,
-              ),
-              label: Text(
-                "Upgrade to Premium",
-                style: TextStyle(
-                  fontSize:
-                      settings.fontSize,
-                  fontWeight:
-                      FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 30),
         ],
       ),
     );
   }
-}
-Widget premiumCard(
-  BuildContext context,
-  SettingsProvider settings, {
-  required IconData icon,
-  required String title,
-  required String subtitle,
-}) {
-  return Card(
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(18),
-    ),
-    child: ListTile(
-      contentPadding: const EdgeInsets.all(16),
-
-      leading: CircleAvatar(
-        radius: 28,
-        backgroundColor:
-            Theme.of(context)
-                .colorScheme
-                .primaryContainer,
-        child: Icon(
-          icon,
-          color:
-              Theme.of(context)
-                  .colorScheme
-                  .primary,
-        ),
-      ),
-
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: settings.fontSize - 1,
-        ),
-      ),
-
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: settings.fontSize - 3,
-          ),
-        ),
-      ),
-
-      trailing: const Icon(
-        Icons.lock,
-        color: Colors.orange,
-      ),
-
-      onTap: () {
-        openPremium(
-          context,
-          title,
-        );
-      },
-    ),
-  );
 }
