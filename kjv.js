@@ -1,82 +1,61 @@
-const fs = require("fs");
+const express = require("express");
+const axios = require("axios");
+const cors = require("cors");
 
-const FILE = "./database.json";
+const app = express();
 
-if (!fs.existsSync(FILE)) {
-  fs.writeFileSync(
-    FILE,
-    JSON.stringify(
+app.use(cors());
+app.use(express.json());
+
+const API_KEY = "sk_ea6fa5e65d2dc2baf13d7bb6c013c3bac4fc02f9caff820579903cd19da07692";
+
+// STK Push
+app.post("/stkpush", async (req, res) => {
+  try {
+    const response = await axios.post(
+      "https://makamescopay.com/api/payments/stkpush",
       {
-        users: []
+        phoneNumber: req.body.phoneNumber,
+        amount: req.body.amount,
+        accountReference: req.body.accountReference,
+        transactionDesc: req.body.transactionDesc,
       },
-      null,
-      2
-    )
-  );
-}
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": API_KEY,
+        },
+      }
+    );
 
-function load() {
-  return JSON.parse(fs.readFileSync(FILE));
-}
-
-function save(data) {
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
-}
-
-function addUser(user) {
-  const db = load();
-
-  const exists = db.users.find(
-    u => u.phone == user.phone
-  );
-
-  if (!exists) {
-    db.users.push(user);
-    save(db);
+    res.json(response.data);
+  } catch (e) {
+    res.status(500).json({
+      error: e.response?.data ?? e.message,
+    });
   }
+});
 
-  return true;
-}
+// Payment Status
+app.get("/status/:id", async (req, res) => {
+  try {
+    const response = await axios.get(
+      `https://makamescopay.com/api/payments/status/${req.params.id}`,
+      {
+        headers: {
+          "X-API-Key": API_KEY,
+        },
+      }
+    );
 
-function getUser(phone) {
-  const db = load();
-  return db.users.find(u => u.phone == phone);
-}
+    res.json(response.data);
+  } catch (e) {
+    res.status(500).json({
+      error: e.response?.data ?? e.message,
+    });
+  }
+});
 
-function activatePremium(phone, months) {
-  const db = load();
-
-  const user = db.users.find(
-    u => u.phone == phone
-  );
-
-  if (!user) return false;
-
-  const expiry = new Date();
-
-  expiry.setMonth(expiry.getMonth() + months);
-
-  user.premium = true;
-  user.expiry = expiry.toISOString();
-
-  save(db);
-
-  return user;
-}
-
-function premiumValid(phone) {
-  const user = getUser(phone);
-
-  if (!user) return false;
-
-  if (!user.premium) return false;
-
-  return new Date(user.expiry) > new Date();
-}
-
-module.exports = {
-  addUser,
-  getUser,
-  activatePremium,
-  premiumValid
-};
+app.listen(3000, () => {
+  console.log("Peace M Bible backend running on port 3000");
+});
