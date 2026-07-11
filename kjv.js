@@ -1,32 +1,9 @@
- title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: settings.fontSize - 1,
-        ),
-      ),
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: settings.fontSize - 3,
-          ),
-        ),
-      ),
+import '../providers/settings_provider.dart';
+import '../services/api_service.dart';
+import '../services/user_service.dart';
 
-      trailing: const Icon(
-        Icons.lock,
-        color: Colors.orange,
-      ),
-
-      onTap: () {
-        openPremium(
-          context,
-          title,
-        );
-      },
-    ),
-  );
-}
+import 'create_account_screen.dart';
+import 'subscription_screen.dart';
