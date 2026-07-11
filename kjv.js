@@ -1,19 +1,21 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
-import '../services/user_service.dart';
+import '../services/api_service.dart';
 
 class PaymentStatusScreen extends StatefulWidget {
   final String checkoutRequestId;
-  final Map plan;
+  final String phone;
+  final String plan;
+  final int months;
 
   const PaymentStatusScreen({
     super.key,
     required this.checkoutRequestId,
+    required this.phone,
     required this.plan,
+    required this.months,
   });
 
   @override
@@ -25,7 +27,7 @@ class _PaymentStatusScreenState
     extends State<PaymentStatusScreen> {
   Timer? timer;
 
-  String status = "Waiting for payment...";
+  String status = "Waiting for M-PESA payment...";
 
   @override
   void initState() {
@@ -39,20 +41,16 @@ class _PaymentStatusScreenState
 
   Future<void> checkPayment() async {
     try {
-      final response = await http.get(
-        Uri.parse(
-          "YOUR_BACKEND_URL/status/${widget.checkoutRequestId}",
-        ),
+      final data = await ApiService.paymentStatus(
+        widget.checkoutRequestId,
       );
-
-      final data = jsonDecode(response.body);
 
       if (data["status"] == "completed") {
         timer?.cancel();
 
-        await UserService.activatePremium(
-          plan: widget.plan["title"],
-          months: widget.plan["months"],
+        await ApiService.activatePremium(
+          phone: widget.phone,
+          plan: widget.plan,
         );
 
         if (!mounted) return;
@@ -60,55 +58,57 @@ class _PaymentStatusScreenState
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (_) {
-            return AlertDialog(
-              title: const Text("Payment Successful"),
-              content: Text(
-                "Your ${widget.plan["title"]} subscription has been activated successfully.",
+          builder: (_) => AlertDialog(
+            title: const Text("Payment Successful"),
+            content: Text(
+              "Your ${widget.plan} subscription has been activated successfully.",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.popUntil(
+                    context,
+                    (route) => route.isFirst,
+                  );
+                },
+                child: const Text("Continue"),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.popUntil(
-                      context,
-                      (route) => route.isFirst,
-                    );
-                  },
-                  child: const Text("Continue"),
-                ),
-              ],
-            );
-          },
+            ],
+          ),
         );
-      } else if (data["status"] == "failed") {
+
+        return;
+      }
+
+      if (data["status"] == "failed") {
         timer?.cancel();
 
         setState(() {
           status = "Payment Failed";
         });
-      } else if (data["status"] == "cancelled") {
+
+        return;
+      }
+
+      if (data["status"] == "cancelled") {
         timer?.cancel();
 
         setState(() {
           status = "Payment Cancelled";
         });
-      } else {
-        setState(() {
-          status = "Waiting for M-Pesa confirmation...";
-        });
+
+        return;
       }
+
+      setState(() {
+        status = "Waiting for M-PESA confirmation...";
+      });
     } catch (e) {
       setState(() {
         status = "Checking payment...";
       });
     }
-  }
-
-  @override
-  void dispose() {
-    timer?.cancel();
-    super.dispose();
   }
 
   @override
@@ -125,26 +125,64 @@ class _PaymentStatusScreenState
             children: [
               const CircularProgressIndicator(),
 
-              const SizedBox(height: 25),
+              const SizedBox(height: 30),
 
               Text(
                 status,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
 
               const SizedBox(height: 20),
 
               const Text(
-                "Complete the M-Pesa prompt on your phone.",
+                "Complete the M-PESA prompt on your phone.\n"
+                "The payment status will be checked automatically every 5 seconds.",
                 textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey,
+                ),
+              ),
+
+              const SizedBox(height: 35),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.refresh),
+                  label: const Text("Check Now"),
+                  onPressed: checkPayment,
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.close),
+                  label: const Text("Cancel"),
+                  onPressed: () {
+                    timer?.cancel();
+                    Navigator.pop(context);
+                  },
+                ),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
   }
 }
