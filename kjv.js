@@ -1,114 +1,141 @@
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
-import 'payment_screen.dart';
+import '../services/user_service.dart';
 
-class SubscriptionScreen extends StatefulWidget {
-  const SubscriptionScreen({super.key});
+class PaymentScreen extends StatefulWidget {
+  final String title;
+  final int amount;
+  final int months;
+
+  const PaymentScreen({
+    super.key,
+    required this.title,
+    required this.amount,
+    required this.months,
+  });
 
   @override
-  State<SubscriptionScreen> createState() =>
-      _SubscriptionScreenState();
+  State<PaymentScreen> createState() =>
+      _PaymentScreenState();
 }
 
-class _SubscriptionScreenState
-    extends State<SubscriptionScreen> {
-  int selectedPlan = 0;
+class _PaymentScreenState
+    extends State<PaymentScreen> {
+  final phoneController = TextEditingController();
 
   bool loading = false;
 
-  final plans = [
-    {
-      "title": "2 Months",
-      "price": 40,
-      "months": 2,
-    },
-    {
-      "title": "6 Months",
-      "price": 350,
-      "months": 6,
-    },
-    {
-      "title": "1 Year",
-      "price": 500,
-      "months": 12,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    loadPhone();
+  }
 
-  Future<void> continuePayment() async {
-    final plan = plans[selectedPlan];
+  Future<void> loadPhone() async {
+    final user = await UserService.getUser();
 
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PaymentScreen(
-          title: plan["title"].toString(),
-          amount: plan["price"] as int,
-          months: plan["months"] as int,
+    if (user != null) {
+      phoneController.text = user.phone;
+      setState(() {});
+    }
+  }
+
+  Future<void> payNow() async {
+    setState(() {
+      loading = true;
+    });
+
+    try {
+      final response = await ApiService.stkPush(
+        phone: phoneController.text.trim(),
+        amount: widget.amount,
+        plan: widget.title,
+      );
+
+      if (!mounted) return;
+
+      final checkoutId =
+          response["checkoutRequestId"];
+
+      Navigator.pushNamed(
+        context,
+        "/payment-status",
+        arguments: {
+          "checkoutRequestId": checkoutId,
+          "phone": phoneController.text.trim(),
+          "plan": widget.title,
+          "months": widget.months,
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
         ),
-      ),
-    );
+      );
+    }
+
+    if (mounted) {
+      setState(() {
+        loading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Choose Subscription"),
+        title: const Text("Confirm Payment"),
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const Text(
-              "Select a Premium Plan",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+
+            TextField(
+              controller: phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: "M-PESA Phone Number",
+                hintText: "2547XXXXXXXX",
+                prefixIcon: Icon(Icons.phone),
+                border: OutlineInputBorder(),
               ),
             ),
 
             const SizedBox(height: 25),
 
-            Expanded(
-              child: ListView.builder(
-                itemCount: plans.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    elevation: selectedPlan == index ? 6 : 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      side: BorderSide(
-                        color: selectedPlan == index
-                            ? Colors.purple
-                            : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                    child: RadioListTile<int>(
-                      value: index,
-                      groupValue: selectedPlan,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedPlan = value!;
-                        });
-                      },
-                      title: Text(
-                        plans[index]["title"].toString(),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      subtitle: Text(
-                        "KSh ${plans[index]["price"]}",
-                      ),
-                    ),
-                  );
-                },
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: ListTile(
+                leading: const Icon(
+                  Icons.workspace_premium,
+                  color: Colors.amber,
+                ),
+
+                title: Text(
+                  widget.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                subtitle: Text(
+                  "KSh ${widget.amount}\n"
+                  "${widget.months} months premium access",
+                ),
               ),
             ),
 
-            const SizedBox(height: 20),
+            const Spacer(),
 
             SizedBox(
               width: double.infinity,
@@ -124,31 +151,17 @@ class _SubscriptionScreenState
                         ),
                       )
                     : const Icon(Icons.payment),
+
                 label: Text(
                   loading
-                      ? "Please wait..."
-                      : "Continue to Payment",
-                  style: const TextStyle(fontSize: 18),
+                      ? "Sending Request..."
+                      : "Pay via M-PESA",
                 ),
-                onPressed: loading
-                    ? null
-                    : () async {
-                        setState(() {
-                          loading = true;
-                        });
 
-                        await continuePayment();
-
-                        if (mounted) {
-                          setState(() {
-                            loading = false;
-                          });
-                        }
-                      },
+                onPressed:
+                    loading ? null : payNow,
               ),
             ),
-
-            const SizedBox(height: 20),
           ],
         ),
       ),
