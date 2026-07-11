@@ -24,10 +24,12 @@ class ChapterScreen extends StatelessWidget {
       body: GridView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: totalChapters,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        gridDelegate:
+            const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 4,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
+          childAspectRatio: 1,
         ),
         itemBuilder: (context, index) {
           final chapter = index + 1;
@@ -36,6 +38,9 @@ class ChapterScreen extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.purple,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
             onPressed: () {
               Navigator.push(
