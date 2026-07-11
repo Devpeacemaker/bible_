@@ -2,15 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/settings_provider.dart';
+import '../services/api_service.dart';
 import '../services/user_service.dart';
+
 import 'create_account_screen.dart';
 import 'subscription_screen.dart';
 
 class VersionScreen extends StatelessWidget {
   const VersionScreen({super.key});
 
-  Future<void> openPremium(BuildContext context) async {
-    final hasAccount = await UserService.hasAccount();
+  Future<void> openPremium(
+    BuildContext context,
+    String feature,
+  ) async {
+    final hasAccount =
+        await UserService.hasAccount();
 
     if (!context.mounted) return;
 
@@ -18,15 +24,18 @@ class VersionScreen extends StatelessWidget {
       final created = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => const CreateAccountScreen(),
+          builder: (_) =>
+              const CreateAccountScreen(),
         ),
       );
 
-      if (created == true && context.mounted) {
+      if (created == true &&
+          context.mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const SubscriptionScreen(),
+            builder: (_) =>
+                const SubscriptionScreen(),
           ),
         );
       }
@@ -34,20 +43,61 @@ class VersionScreen extends StatelessWidget {
       return;
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const SubscriptionScreen(),
+    final user = await UserService.getUser();
+
+    if (user == null) return;
+
+    final premium =
+        await ApiService.premium(user.phone);
+
+    if (!context.mounted) return;
+
+    if (!premium) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              const SubscriptionScreen(),
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text(
+          "Premium Active",
+        ),
+        content: Text(
+          "Opening $feature...",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+
+              // Premium feature
+              // Next part will open the
+              // correct premium screen.
+            },
+            child: const Text(
+              "Continue",
+            ),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context);
+    final settings =
+        Provider.of<SettingsProvider>(context);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor:
+          Theme.of(context).scaffoldBackgroundColor,
 
       appBar: AppBar(
         title: const Text("Premium"),
@@ -57,17 +107,16 @@ class VersionScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(20),
+              color:
+                  Theme.of(context).colorScheme.primary,
+              borderRadius:
+                  BorderRadius.circular(20),
             ),
-
             child: Column(
               children: [
-
                 const Icon(
                   Icons.workspace_premium,
                   color: Colors.amber,
@@ -81,8 +130,10 @@ class VersionScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: settings.fontSize + 7,
-                    fontWeight: FontWeight.bold,
+                    fontSize:
+                        settings.fontSize + 7,
+                    fontWeight:
+                        FontWeight.bold,
                   ),
                 ),
 
@@ -94,7 +145,8 @@ class VersionScreen extends StatelessWidget {
                   style: TextStyle(
                     color: Colors.white70,
                     height: 1.5,
-                    fontSize: settings.fontSize - 2,
+                    fontSize:
+                        settings.fontSize - 2,
                   ),
                 ),
               ],
@@ -108,7 +160,8 @@ class VersionScreen extends StatelessWidget {
             settings,
             icon: Icons.language,
             title: "English Bible (ENG)",
-            subtitle: "Unlock the complete English Bible translation.",
+            subtitle:
+                "Unlock the complete English Bible translation.",
           ),
 
           const SizedBox(height: 15),
@@ -118,7 +171,8 @@ class VersionScreen extends StatelessWidget {
             settings,
             icon: Icons.public,
             title: "Kiswahili Bible (SWA)",
-            subtitle: "Soma Biblia kwa Kiswahili.",
+            subtitle:
+                "Soma Biblia kwa Kiswahili.",
           ),
 
           const SizedBox(height: 15),
@@ -128,7 +182,8 @@ class VersionScreen extends StatelessWidget {
             settings,
             icon: Icons.note_alt_outlined,
             title: "Bible Notes",
-            subtitle: "Write and organize personal notes for every verse.",
+            subtitle:
+                "Write and organize personal notes.",
           ),
 
           const SizedBox(height: 15),
@@ -138,7 +193,8 @@ class VersionScreen extends StatelessWidget {
             settings,
             icon: Icons.headphones,
             title: "Audio Bible",
-            subtitle: "Listen to the Bible anytime, anywhere.",
+            subtitle:
+                "Listen to the Bible anytime, anywhere.",
           ),
 
           const SizedBox(height: 35),
@@ -148,21 +204,31 @@ class VersionScreen extends StatelessWidget {
             height: 55,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
+                backgroundColor:
+                    Theme.of(context)
+                        .colorScheme
+                        .primary,
+                foregroundColor:
+                    Theme.of(context)
+                        .colorScheme
+                        .onPrimary,
               ),
               onPressed: () {
-                openPremium(context);
+                openPremium(
+                  context,
+                  "Peace M Bible Premium",
+                );
               },
-              icon: const Icon(Icons.workspace_premium),
+              icon: const Icon(
+                Icons.workspace_premium,
+              ),
               label: Text(
                 "Upgrade to Premium",
                 style: TextStyle(
-                  fontSize: settings.fontSize,
-                  fontWeight: FontWeight.bold,
+                  fontSize:
+                      settings.fontSize,
+                  fontWeight:
+                      FontWeight.bold,
                 ),
               ),
             ),
@@ -173,58 +239,66 @@ class VersionScreen extends StatelessWidget {
       ),
     );
   }
-  Widget premiumCard(
-    BuildContext context,
-    SettingsProvider settings, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
+}
+Widget premiumCard(
+  BuildContext context,
+  SettingsProvider settings, {
+  required IconData icon,
+  required String title,
+  required String subtitle,
+}) {
+  return Card(
+    elevation: 2,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(18),
+    ),
+    child: ListTile(
+      contentPadding: const EdgeInsets.all(16),
 
-        leading: CircleAvatar(
-          radius: 28,
-          backgroundColor:
-              Theme.of(context).colorScheme.primaryContainer,
-          child: Icon(
-            icon,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+      leading: CircleAvatar(
+        radius: 28,
+        backgroundColor:
+            Theme.of(context)
+                .colorScheme
+                .primaryContainer,
+        child: Icon(
+          icon,
+          color:
+              Theme.of(context)
+                  .colorScheme
+                  .primary,
         ),
+      ),
 
-        title: Text(
-          title,
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: settings.fontSize - 1,
+        ),
+      ),
+
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 6),
+        child: Text(
+          subtitle,
           style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: settings.fontSize - 1,
+            fontSize: settings.fontSize - 3,
           ),
         ),
-
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: settings.fontSize - 3,
-            ),
-          ),
-        ),
-
-        trailing: const Icon(
-          Icons.lock,
-          color: Colors.orange,
-        ),
-
-        onTap: () {
-          openPremium(context);
-        },
       ),
-    );
-  }
+
+      trailing: const Icon(
+        Icons.lock,
+        color: Colors.orange,
+      ),
+
+      onTap: () {
+        openPremium(
+          context,
+          title,
+        );
+      },
+    ),
+  );
 }
