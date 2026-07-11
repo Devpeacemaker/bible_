@@ -1,80 +1,62 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+const express = require("express");
+const axios = require("axios");
+const cors = require("cors");
 
-import 'providers/settings_provider.dart';
+const app = express();
 
-import 'screens/main_navigation.dart';
-import 'screens/create_account_screen.dart';
-import 'screens/subscription_screen.dart';
-import 'screens/payment_screen.dart';
-import 'screens/payment_status_screen.dart';
+app.use(cors());
+app.use(express.json());
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+const API_KEY =
+"YOUR_MAKAMESCO_SECRET_KEY";
 
-  final settingsProvider = SettingsProvider();
-  await settingsProvider.load();
-
-  runApp(
-    ChangeNotifierProvider.value(
-      value: settingsProvider,
-      child: const PeaceMBibleApp(),
-    ),
-  );
-}
-
-class PeaceMBibleApp extends StatelessWidget {
-  const PeaceMBibleApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context);
-
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Peace M Bible',
-
-      themeMode: settings.themeMode,
-
-      theme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-        brightness: Brightness.light,
-      ),
-
-      darkTheme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-        brightness: Brightness.dark,
-      ),
-
-      routes: {
-        "/create-account": (_) => const CreateAccountScreen(),
-
-        "/subscription": (_) => const SubscriptionScreen(),
-
-        "/payment": (context) {
-          final plan =
-              ModalRoute.of(context)!.settings.arguments
-                  as Map;
-
-          return PaymentScreen(plan: plan);
-        },
-
-        "/payment-status": (context) {
-          final args =
-              ModalRoute.of(context)!.settings.arguments
-                  as Map;
-
-          return PaymentStatusScreen(
-            checkoutRequestId:
-                args["checkoutRequestId"],
-            plan: args["plan"],
-          );
-        },
+// STK Push
+app.post("/stkpush", async (req, res) => {
+  try {
+    const response = await axios.post(
+      "https://makamescopay.com/api/payments/stkpush",
+      {
+        phoneNumber: req.body.phoneNumber,
+        amount: req.body.amount,
+        accountReference: req.body.accountReference,
+        transactionDesc: req.body.transactionDesc,
       },
-
-      home: const MainNavigation(),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": API_KEY,
+        },
+      }
     );
+
+    res.json(response.data);
+  } catch (e) {
+    res.status(500).json({
+      error: e.response?.data ?? e.message,
+    });
   }
-}
+});
+
+// Payment Status
+app.get("/status/:id", async (req, res) => {
+  try {
+    const response = await axios.get(
+      `https://makamescopay.com/api/payments/status/${req.params.id}`,
+      {
+        headers: {
+          "X-API-Key": API_KEY,
+        },
+      }
+    );
+
+    res.json(response.data);
+  } catch (e) {
+    res.status(500).json({
+      error: e.response?.data ?? e.message,
+    });
+  }
+});
+
+app.listen(3000, () => {
+  console.log("Peace M Bible backend running on port 3000");
+});
