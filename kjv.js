@@ -1,607 +1,94 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 
-import '../models/saved_verse.dart';
-import '../providers/settings_provider.dart';
-import '../services/bible_service.dart';
-import '../services/library_service.dart';
-import '../services/api_service.dart';
-import '../services/user_service.dart';
-import 'version_screen.dart';
+class BibleService {
+  static List<dynamic>? _books;
+  static String _currentVersion = "kjv";
 
-class BibleScreen extends StatefulWidget {
-  final String book;
-  final int chapter;
-  final int bookIndex;
-  final int totalChapters;
-  final int? verse;
+  /// Current loaded version
+  static String get currentVersion => _currentVersion;
 
-  const BibleScreen({
-    super.key,
-    required this.book,
-    required this.chapter,
-    required this.bookIndex,
-    required this.totalChapters,
-    this.verse,
-  });
+  /// Change Bible version
+  static Future<void> setVersion(String version) async {
+    if (_currentVersion == version && _books != null) return;
 
-  @override
-  State<BibleScreen> createState() => _BibleScreenState();
-}
+    _currentVersion = version;
+    _books = null;
 
-class _BibleScreenState extends State<BibleScreen> {
-  late int currentChapter;
-
-  List<String> verses = [];
-
-  bool loading = true;
-
-  final ScrollController _scrollController =
-      ScrollController();
-
-  final List<GlobalKey> _verseKeys = [];
-
-  int? selectedVerse;
-
-  Color highlightColor = Colors.yellow;
-
-  @override
-  void initState() {
-    super.initState();
-    currentChapter = widget.chapter;
-    loadChapter();
+    await loadBible();
   }
 
-  Future<void> loadChapter() async {
-    setState(() {
-      loading = true;
-    });
+  /// Load selected Bible
+  static Future<void> loadBible() async {
+    if (_books != null) return;
 
-    try {
-      final settings =
-          Provider.of<SettingsProvider>(
-        context,
-        listen: false,
-      );
+    String file = "assets/bibles/kjv.json";
 
-      // ==========================
-      // ENGLISH PREMIUM API
-      // ==========================
-      if (settings.selectedBible == "eng") {
-        final premium = await ApiService.premium(
-          UserService.currentPhone,
-        );
+    switch (_currentVersion) {
+      case "eng":
+        file = "assets/bibles/eng.json";
+        break;
 
-        if (!premium) {
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                    const VersionScreen(),
-              ),
-            );
-          }
+      case "swa":
+        file = "assets/bibles/swa.json";
+        break;
 
-          return;
-        }
-
-        verses =
-            await BibleService.getEnglishChapter(
-          widget.book,
-          currentChapter,
-        );
-      }
-
-      // ==========================
-      // OTHER BIBLES
-      // ==========================
-      else {
-        verses = await BibleService.getChapter(
-          widget.bookIndex,
-          currentChapter - 1,
-        );
-      }
-
-      _verseKeys
-        ..clear()
-        ..addAll(
-          List.generate(
-            verses.length,
-            (_) => GlobalKey(),
-          ),
-        );
-    } catch (e) {
-      verses = [
-        "Error loading chapter.\n$e",
-      ];
+      case "kjv":
+      default:
+        file = "assets/bibles/kjv.json";
     }
 
-    if (mounted) {
-      final settings =
-          Provider.of<SettingsProvider>(
-        context,
-        listen: false,
-      );
+    final jsonString = await rootBundle.loadString(file);
 
-      highlightColor =
-          settings.highlightColor;
-    }
-
-    setState(() {
-      loading = false;
-    });
-
-    if (widget.verse != null &&
-        widget.chapter ==
-            currentChapter &&
-        widget.verse! <=
-            _verseKeys.length) {
-      Future.delayed(
-        const Duration(milliseconds: 400),
-        () {
-          final ctx =
-              _verseKeys[
-                      widget.verse! - 1]
-                  .currentContext;
-
-          if (ctx != null) {
-            Scrollable.ensureVisible(
-              ctx,
-              duration: const Duration(
-                milliseconds: 700,
-              ),
-              curve: Curves.easeInOut,
-            );
-          }
-        },
-      );
-    }
-  }
-  void previousChapter() {
-    if (currentChapter > 1) {
-      currentChapter--;
-      loadChapter();
-    }
+    _books = json.decode(jsonString);
   }
 
-  void nextChapter() {
-    if (currentChapter < widget.totalChapters) {
-      currentChapter++;
-      loadChapter();
-    }
-  }
-
-  Future<void> switchBibleVersion() async {
-    final settings =
-        Provider.of<SettingsProvider>(
-      context,
-      listen: false,
-    );
-
-    // FREE KJV → PREMIUM ENG
-    if (settings.selectedBible == "kjv") {
-      final premium = await ApiService.premium(
-        UserService.currentPhone,
-      );
-
-      if (!premium) {
-        if (!mounted) return;
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                const VersionScreen(),
-          ),
-        );
-
-        return;
-      }
-
-      await settings.setBibleVersion("eng");
-      await BibleService.setVersion("eng");
-      await loadChapter();
-      return;
-    }
-
-    // ENG → SWA
-    if (settings.selectedBible == "eng") {
-      final premium = await ApiService.premium(
-        UserService.currentPhone,
-      );
-
-      if (!premium) {
-        if (!mounted) return;
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                const VersionScreen(),
-          ),
-        );
-
-        return;
-      }
-
-      await settings.setBibleVersion("swa");
-      await BibleService.setVersion("swa");
-      await loadChapter();
-      return;
-    }
-
-    // SWA → FREE KJV
-    await settings.setBibleVersion("kjv");
-    await BibleService.setVersion("kjv");
-    await loadChapter();
-  }
-
-  Future<void> showVerseMenu(
-    int verseNumber,
-    String verseText,
+  /// Read chapter
+  static Future<List<String>> getChapter(
+    int bookIndex,
+    int chapterIndex,
   ) async {
-    final verse = SavedVerse(
-      book: widget.book,
-      chapter: currentChapter,
-      verse: verseNumber,
-      text: verseText,
-    );
+    await loadBible();
 
-    await showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.highlight),
-                title: const Text(
-                  "Highlight Verse",
-                ),
-                onTap: () {
-                  Navigator.pop(context);
+    final chapters = _books![bookIndex]["chapters"] as List;
+    final verses = chapters[chapterIndex] as List;
 
-                  setState(() {
-                    selectedVerse = verseNumber;
-                  });
-                },
-              ),
-
-              ListTile(
-                leading:
-                    const Icon(Icons.color_lens),
-                title: const Text(
-                  "Highlight Color",
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-
-                  showDialog(
-                    context: this.context,
-                    builder: (_) {
-                      return AlertDialog(
-                        title: const Text(
-                          "Choose Highlight Color",
-                        ),
-                        content: Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: [
-                            Colors.yellow,
-                            Colors.green,
-                            Colors.orange,
-                            Colors.pink,
-                            Colors.blue,
-                            Colors.purple,
-                            Colors.red,
-                            Colors.teal,
-                          ].map((color) {
-                            return GestureDetector(
-                              onTap: () async {
-                                final settings =
-                                    Provider.of<
-                                        SettingsProvider>(
-                                  this.context,
-                                  listen: false,
-                                );
-
-                                await settings
-                                    .setHighlightColor(
-                                        color);
-
-                                setState(() {
-                                  highlightColor =
-                                      color;
-                                });
-
-                                if (mounted) {
-                                  Navigator.pop(
-                                      this.context);
-                                }
-                              },
-                              child: CircleAvatar(
-                                radius: 20,
-                                backgroundColor:
-                                    color,
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.bookmark),
-                title: const Text("Bookmark"),
-                onTap: () async {
-                  await LibraryService.addBookmark(verse);
-
-                  if (context.mounted) {
-                    Navigator.pop(context);
-
-                    ScaffoldMessenger.of(this.context)
-                        .showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "Verse bookmarked",
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(Icons.favorite),
-                title: const Text("Favorite"),
-                onTap: () async {
-                  await LibraryService.addFavorite(verse);
-
-                  if (context.mounted) {
-                    Navigator.pop(context);
-
-                    ScaffoldMessenger.of(this.context)
-                        .showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "Added to favorites",
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(Icons.copy),
-                title: const Text("Copy Verse"),
-                onTap: () async {
-                  await Clipboard.setData(
-                    ClipboardData(
-                      text:
-                          "${widget.book} $currentChapter:$verseNumber\n\n$verseText",
-                    ),
-                  );
-
-                  if (context.mounted) {
-                    Navigator.pop(context);
-
-                    ScaffoldMessenger.of(this.context)
-                        .showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "Verse copied",
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(Icons.share),
-                title: const Text("Share Verse"),
-                onTap: () async {
-                  await Share.share(
-                    "${widget.book} $currentChapter:$verseNumber\n\n$verseText",
-                  );
-
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                  }
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(Icons.close),
-                title: const Text("Cancel"),
-                onTap: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    return verses.map((e) => e.toString()).toList();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final settings =
-        Provider.of<SettingsProvider>(context);
+  /// Search selected Bible
+  static Future<List<Map<String, dynamic>>> searchBible(
+    String keyword,
+  ) async {
+    await loadBible();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "${widget.book} $currentChapter (${settings.selectedBible.toUpperCase()})",
-        ),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
-      ),
-      body: loading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
-          : GestureDetector(
-              onHorizontalDragEnd: (details) async {
-                if (details.primaryVelocity == null) return;
+    keyword = keyword.toLowerCase();
 
-                await switchBibleVersion();
-              },
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: verses.length,
-                      itemBuilder: (context, index) {
-                        final verseNumber = index + 1;
+    List<Map<String, dynamic>> results = [];
 
-                        final bool searchedVerse =
-                            widget.verse == verseNumber &&
-                                widget.chapter ==
-                                    currentChapter;
+    for (int book = 0; book < _books!.length; book++) {
+      final bookData = _books![book];
 
-                        final bool highlighted =
-                            selectedVerse ==
-                                verseNumber;
+      final chapters = bookData["chapters"] as List;
 
-                        return AnimatedContainer(
-                          key: _verseKeys[index],
-                          duration: const Duration(
-                            milliseconds: 300,
-                          ),
-                          margin:
-                              const EdgeInsets.only(
-                            bottom: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: highlighted
-                                ? highlightColor
-                                : searchedVerse
-                                    ? Colors.yellow
-                                        .shade200
-                                    : Colors.transparent,
-                            borderRadius:
-                                BorderRadius.circular(
-                                    12),
-                          ),
-                          child: InkWell(
-                            borderRadius:
-                                BorderRadius.circular(
-                                    12),
-                            onLongPress: () {
-                              showVerseMenu(
-                                verseNumber,
-                                verses[index],
-                              );
-                            },
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.all(
-                                      10),
-                              child: RichText(
-                                text: TextSpan(
-                                  style: TextStyle(
-                                    fontSize:
-                                        settings
-                                            .fontSize,
-                                    color: Theme.of(
-                                            context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color,
-                                    height: 1.8,
-                                  ),
-                                  children: [
-                                    TextSpan(
-                                      text:
-                                          "$verseNumber ",
-                                      style:
-                                          const TextStyle(
-                                        color: Colors
-                                            .purple,
-                                        fontWeight:
-                                            FontWeight
-                                                .bold,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text:
-                                          verses[index],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+      for (int chapter = 0; chapter < chapters.length; chapter++) {
+        final verses = chapters[chapter] as List;
 
-                  Container(
-                    padding:
-                        const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .cardColor,
-                      border: Border(
-                        top: BorderSide(
-                          color:
-                              Colors.grey.shade300,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child:
-                              ElevatedButton.icon(
-                            onPressed:
-                                currentChapter == 1
-                                    ? null
-                                    : previousChapter,
-                            icon: const Icon(
-                              Icons.arrow_back,
-                            ),
-                            label: const Text(
-                              "Previous",
-                            ),
-                          ),
-                        ),
+        for (int verse = 0; verse < verses.length; verse++) {
+          final text = verses[verse].toString();
 
-                        const SizedBox(width: 12),
+          if (text.toLowerCase().contains(keyword)) {
+            results.add({
+              "bookIndex": book,
+              "chapter": chapter + 1,
+              "verse": verse + 1,
+              "text": text,
+            });
+          }
+        }
+      }
+    }
 
-                        Expanded(
-                          child:
-                              ElevatedButton.icon(
-                            onPressed:
-                                currentChapter ==
-                                        widget
-                                            .totalChapters
-                                    ? null
-                                    : nextChapter,
-                            icon: const Icon(
-                              Icons.arrow_forward,
-                            ),
-                            label: const Text(
-                              "Next",
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-    );
+    return results;
   }
 }
