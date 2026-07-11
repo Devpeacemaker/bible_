@@ -1,170 +1,80 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../services/api_service.dart';
-import '../services/user_service.dart';
+import 'providers/settings_provider.dart';
 
-class PaymentScreen extends StatefulWidget {
-  final String title;
-  final int amount;
-  final int months;
+import 'screens/main_navigation.dart';
+import 'screens/create_account_screen.dart';
+import 'screens/subscription_screen.dart';
+import 'screens/payment_screen.dart';
+import 'screens/payment_status_screen.dart';
 
-  const PaymentScreen({
-    super.key,
-    required this.title,
-    required this.amount,
-    required this.months,
-  });
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-  @override
-  State<PaymentScreen> createState() =>
-      _PaymentScreenState();
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.load();
+
+  runApp(
+    ChangeNotifierProvider.value(
+      value: settingsProvider,
+      child: const PeaceMBibleApp(),
+    ),
+  );
 }
 
-class _PaymentScreenState
-    extends State<PaymentScreen> {
-  final phoneController = TextEditingController();
-
-  bool loading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    loadPhone();
-  }
-
-  Future<void> loadPhone() async {
-    final user = await UserService.getUser();
-
-    if (user != null) {
-      phoneController.text = user.phone;
-      setState(() {});
-    }
-  }
-
-  Future<void> payNow() async {
-    setState(() {
-      loading = true;
-    });
-
-    try {
-      final response = await ApiService.stkPush(
-        phone: phoneController.text.trim(),
-        amount: widget.amount,
-        plan: widget.title,
-      );
-
-      if (!mounted) return;
-
-      final checkoutId =
-          response["checkoutRequestId"];
-
-      Navigator.pushNamed(
-        context,
-        "/payment-status",
-        arguments: {
-          "checkoutRequestId": checkoutId,
-          "phone": phoneController.text.trim(),
-          "plan": widget.title,
-          "months": widget.months,
-        },
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
-    }
-
-    if (mounted) {
-      setState(() {
-        loading = false;
-      });
-    }
-  }
+class PeaceMBibleApp extends StatelessWidget {
+  const PeaceMBibleApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Confirm Payment"),
+    final settings = Provider.of<SettingsProvider>(context);
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Peace M Bible',
+
+      themeMode: settings.themeMode,
+
+      theme: ThemeData(
+        colorSchemeSeed: Colors.deepPurple,
+        useMaterial3: true,
+        brightness: Brightness.light,
       ),
 
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: "M-PESA Phone Number",
-                hintText: "2547XXXXXXXX",
-                prefixIcon: Icon(Icons.phone),
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.workspace_premium,
-                  color: Colors.amber,
-                ),
-
-                title: Text(
-                  widget.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                subtitle: Text(
-                  "KSh ${widget.amount}\n"
-                  "${widget.months} months premium access",
-                ),
-              ),
-            ),
-
-            const Spacer(),
-
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton.icon(
-                icon: loading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.payment),
-
-                label: Text(
-                  loading
-                      ? "Sending Request..."
-                      : "Pay via M-PESA",
-                ),
-
-                onPressed:
-                    loading ? null : payNow,
-              ),
-            ),
-          ],
-        ),
+      darkTheme: ThemeData(
+        colorSchemeSeed: Colors.deepPurple,
+        useMaterial3: true,
+        brightness: Brightness.dark,
       ),
+
+      routes: {
+        "/create-account": (_) => const CreateAccountScreen(),
+
+        "/subscription": (_) => const SubscriptionScreen(),
+
+        "/payment": (context) {
+          final plan =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map;
+
+          return PaymentScreen(plan: plan);
+        },
+
+        "/payment-status": (context) {
+          final args =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map;
+
+          return PaymentStatusScreen(
+            checkoutRequestId:
+                args["checkoutRequestId"],
+            plan: args["plan"],
+          );
+        },
+      },
+
+      home: const MainNavigation(),
     );
   }
 }
