@@ -1,125 +1,77 @@
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+class UserModel {
+  final String id;
+  final String fullName;
+  final String email;
+  final String phone;
+  final String password;
 
-class SettingsService {
-  // =========================
-  // THEME
-  // =========================
+  final bool isPremium;
 
-  static Future<void> saveThemeMode(ThemeMode mode) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("theme", mode.name);
+  final String plan;
+
+  final DateTime? subscribedOn;
+  final DateTime? expiryDate;
+
+  UserModel({
+    required this.id,
+    required this.fullName,
+    required this.email,
+    required this.phone,
+    required this.password,
+    this.isPremium = false,
+    this.plan = "",
+    this.subscribedOn,
+    this.expiryDate,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "fullName": fullName,
+      "email": email,
+      "phone": phone,
+      "password": password,
+      "isPremium": isPremium,
+      "plan": plan,
+      "subscribedOn": subscribedOn?.toIso8601String(),
+      "expiryDate": expiryDate?.toIso8601String(),
+    };
   }
 
-  static Future<ThemeMode> getThemeMode() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    switch (prefs.getString("theme")) {
-      case "light":
-        return ThemeMode.light;
-      case "dark":
-        return ThemeMode.dark;
-      default:
-        return ThemeMode.system;
-    }
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json["id"],
+      fullName: json["fullName"],
+      email: json["email"],
+      phone: json["phone"],
+      password: json["password"],
+      isPremium: json["isPremium"] ?? false,
+      plan: json["plan"] ?? "",
+      subscribedOn: json["subscribedOn"] != null
+          ? DateTime.parse(json["subscribedOn"])
+          : null,
+      expiryDate: json["expiryDate"] != null
+          ? DateTime.parse(json["expiryDate"])
+          : null,
+    );
   }
 
-  // =========================
-  // FONT SIZE
-  // =========================
-
-  static Future<void> saveFontSize(double size) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble("fontSize", size);
-  }
-
-  static Future<double> getFontSize() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble("fontSize") ?? 18;
-  }
-
-  // =========================
-  // DAILY VERSE
-  // =========================
-
-  static Future<void> saveDailyVerse(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("dailyVerse", value);
-  }
-
-  static Future<bool> getDailyVerse() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool("dailyVerse") ?? true;
-  }
-
-  // =========================
-  // READING SOUND
-  // =========================
-
-  static Future<void> saveSoundEnabled(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("soundEnabled", value);
-  }
-
-  static Future<bool> getSoundEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool("soundEnabled") ?? true;
-  }
-
-  // =========================
-  // KEEP SCREEN AWAKE
-  // =========================
-
-  static Future<void> saveKeepScreenOn(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("keepScreenOn", value);
-  }
-
-  static Future<bool> getKeepScreenOn() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool("keepScreenOn") ?? false;
-  }
-
-  // =========================
-  // DEFAULT BIBLE VERSION
-  // =========================
-
-  static Future<void> saveBibleVersion(String version) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("bibleVersion", version);
-  }
-
-  static Future<String> getBibleVersion() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString("bibleVersion") ?? "kjv";
-  }
-
-  // =========================
-  // HIGHLIGHT COLOR
-  // =========================
-
-  static Future<void> saveHighlightColor(Color color) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt("highlightColor", color.value);
-  }
-
-  static Future<Color> getHighlightColor() async {
-    final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getInt("highlightColor") ?? Colors.yellow.value;
-    return Color(value);
-  }
-
-  // =========================
-  // PREMIUM
-  // =========================
-
-  static Future<void> activatePremium() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("premium", true);
-  }
-
-  static Future<bool> isPremium() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool("premium") ?? false;
+  UserModel copyWith({
+    bool? isPremium,
+    String? plan,
+    DateTime? subscribedOn,
+    DateTime? expiryDate,
+  }) {
+    return UserModel(
+      id: id,
+      fullName: fullName,
+      email: email,
+      phone: phone,
+      password: password,
+      isPremium: isPremium ?? this.isPremium,
+      plan: plan ?? this.plan,
+      subscribedOn: subscribedOn ?? this.subscribedOn,
+      expiryDate: expiryDate ?? this.expiryDate,
+    );
   }
 }
