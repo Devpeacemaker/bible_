@@ -1,70 +1,90 @@
 import 'package:flutter/material.dart';
-import 'bible_screen.dart';
+import 'package:provider/provider.dart';
 
-class ChapterScreen extends StatelessWidget {
-  final String book;
-  final int totalChapters;
-  final int bookIndex;
+import 'providers/settings_provider.dart';
 
-  const ChapterScreen({
-    super.key,
-    required this.book,
-    required this.totalChapters,
-    required this.bookIndex,
-  });
+import 'screens/main_navigation.dart';
+import 'screens/create_account_screen.dart';
+import 'screens/subscription_screen.dart';
+import 'screens/payment_screen.dart';
+import 'screens/payment_status_screen.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.load();
+
+  runApp(
+    ChangeNotifierProvider.value(
+      value: settingsProvider,
+      child: const PeaceMBibleApp(),
+    ),
+  );
+}
+
+class PeaceMBibleApp extends StatelessWidget {
+  const PeaceMBibleApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(book),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
-      ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: totalChapters,
-        gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1,
-        ),
-        itemBuilder: (context, index) {
-          final chapter = index + 1;
+    final settings = Provider.of<SettingsProvider>(context);
 
-          return ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BibleScreen(
-                    book: book,
-                    chapter: chapter,
-                    bookIndex: bookIndex,
-                    totalChapters: totalChapters,
-                  ),
-                ),
-              );
-            },
-            child: Text(
-              chapter.toString(),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: "Peace M Bible",
+
+      themeMode: settings.themeMode,
+
+      theme: ThemeData(
+        colorSchemeSeed: Colors.deepPurple,
+        useMaterial3: true,
+        brightness: Brightness.light,
+      ),
+
+      darkTheme: ThemeData(
+        colorSchemeSeed: Colors.deepPurple,
+        useMaterial3: true,
+        brightness: Brightness.dark,
+      ),
+
+      routes: {
+        "/create-account": (_) =>
+            const CreateAccountScreen(),
+
+        "/subscription": (_) =>
+            const SubscriptionScreen(),
+
+        "/payment": (context) {
+          final plan =
+              ModalRoute.of(context)!
+                  .settings
+                  .arguments as Map;
+
+          return PaymentScreen(
+            title: plan["title"],
+            amount: plan["price"],
+            months: plan["months"],
           );
         },
-      ),
+
+        "/payment-status": (context) {
+          final args =
+              ModalRoute.of(context)!
+                  .settings
+                  .arguments as Map;
+
+          return PaymentStatusScreen(
+            checkoutRequestId:
+                args["checkoutRequestId"],
+            phone: args["phone"],
+            plan: args["plan"],
+            months: args["months"],
+          );
+        },
+      },
+
+      home: const MainNavigation(),
     );
   }
 }
