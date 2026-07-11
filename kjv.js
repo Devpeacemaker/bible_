@@ -1,121 +1,157 @@
-import 'dart:convert';
+import 'package:flutter/material.dart';
 
-import 'package:http/http.dart' as http;
+import '../services/api_service.dart';
+import 'payment_screen.dart';
 
-class ApiService {
-  // ==========================
-  // LIVE BACKEND
-  // ==========================
+class SubscriptionScreen extends StatefulWidget {
+  const SubscriptionScreen({super.key});
 
-  static const String baseUrl =
-      "https://peace-m-bible-backend.onrender.com";
+  @override
+  State<SubscriptionScreen> createState() =>
+      _SubscriptionScreenState();
+}
 
-  // ==========================
-  // CREATE ACCOUNT
-  // ==========================
+class _SubscriptionScreenState
+    extends State<SubscriptionScreen> {
+  int selectedPlan = 0;
 
-  static Future<bool> register({
-    required String name,
-    required String email,
-    required String phone,
-  }) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/register"),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "name": name,
-        "email": email,
-        "phone": phone,
-      }),
-    );
+  bool loading = false;
 
-    return response.statusCode == 200;
-  }
+  final plans = [
+    {
+      "title": "2 Months",
+      "price": 40,
+      "months": 2,
+    },
+    {
+      "title": "6 Months",
+      "price": 350,
+      "months": 6,
+    },
+    {
+      "title": "1 Year",
+      "price": 500,
+      "months": 12,
+    },
+  ];
 
-  // ==========================
-  // START STK PUSH
-  // ==========================
+  Future<void> continuePayment() async {
+    final plan = plans[selectedPlan];
 
-  static Future<Map<String, dynamic>> stkPush({
-    required String phone,
-    required int amount,
-    required String plan,
-  }) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/stkpush"),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "phoneNumber": phone,
-        "amount": amount,
-        "accountReference": "Peace M Bible",
-        "transactionDesc": plan,
-      }),
-    );
-
-    return jsonDecode(response.body);
-  }
-
-  // ==========================
-  // PAYMENT STATUS
-  // ==========================
-
-  static Future<Map<String, dynamic>> paymentStatus(
-      String checkoutId) async {
-    final response = await http.get(
-      Uri.parse("$baseUrl/status/$checkoutId"),
-    );
-
-    return jsonDecode(response.body);
-  }
-
-  // ==========================
-  // ACTIVATE PREMIUM
-  // ==========================
-
-  static Future<void> activatePremium({
-    required String phone,
-    required String plan,
-  }) async {
-    await http.post(
-      Uri.parse("$baseUrl/activate"),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "phone": phone,
-        "plan": plan,
-      }),
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentScreen(
+          title: plan["title"].toString(),
+          amount: plan["price"] as int,
+          months: plan["months"] as int,
+        ),
+      ),
     );
   }
 
-  // ==========================
-  // CHECK PREMIUM
-  // ==========================
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Choose Subscription"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const Text(
+              "Select a Premium Plan",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
 
-  static Future<bool> premium(String phone) async {
-    final response = await http.get(
-      Uri.parse("$baseUrl/premium/$phone"),
+            const SizedBox(height: 25),
+
+            Expanded(
+              child: ListView.builder(
+                itemCount: plans.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                    elevation: selectedPlan == index ? 6 : 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      side: BorderSide(
+                        color: selectedPlan == index
+                            ? Colors.purple
+                            : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: RadioListTile<int>(
+                      value: index,
+                      groupValue: selectedPlan,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedPlan = value!;
+                        });
+                      },
+                      title: Text(
+                        plans[index]["title"].toString(),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        "KSh ${plans[index]["price"]}",
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton.icon(
+                icon: loading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.payment),
+                label: Text(
+                  loading
+                      ? "Please wait..."
+                      : "Continue to Payment",
+                  style: const TextStyle(fontSize: 18),
+                ),
+                onPressed: loading
+                    ? null
+                    : () async {
+                        setState(() {
+                          loading = true;
+                        });
+
+                        await continuePayment();
+
+                        if (mounted) {
+                          setState(() {
+                            loading = false;
+                          });
+                        }
+                      },
+              ),
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
     );
-
-    final data = jsonDecode(response.body);
-
-    return data["premium"] == true;
-  }
-
-  // ==========================
-  // GET USER
-  // ==========================
-
-  static Future<Map<String, dynamic>> getUser(
-      String phone) async {
-    final response = await http.get(
-      Uri.parse("$baseUrl/user/$phone"),
-    );
-
-    return jsonDecode(response.body);
   }
 }
