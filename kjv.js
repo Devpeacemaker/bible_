@@ -1,196 +1,89 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import '../services/settings_service.dart';
 
-import '../services/api_service.dart';
-import '../services/user_service.dart';
+class SettingsProvider extends ChangeNotifier {
+  ThemeMode _themeMode = ThemeMode.system;
+  double _fontSize = 18;
 
-class PaymentStatusScreen extends StatefulWidget {
-  final String checkoutRequestId;
-  final String phone;
-  final String plan;
-  final int months;
+  bool _dailyVerse = true;
+  bool _soundEnabled = true;
+  bool _keepScreenOn = false;
 
-  const PaymentStatusScreen({
-    super.key,
-    required this.checkoutRequestId,
-    required this.phone,
-    required this.plan,
-    required this.months,
-  });
+  Color _highlightColor = Colors.yellow;
+  String _selectedBible = "kjv";
+  bool _isPremium = false;
 
-  @override
-  State<PaymentStatusScreen> createState() =>
-      _PaymentStatusScreenState();
-}
+  ThemeMode get themeMode => _themeMode;
+  double get fontSize => _fontSize;
 
-class _PaymentStatusScreenState
-    extends State<PaymentStatusScreen> {
-  Timer? timer;
+  bool get dailyVerse => _dailyVerse;
+  bool get soundEnabled => _soundEnabled;
+  bool get keepScreenOn => _keepScreenOn;
 
-  String status = "Waiting for M-PESA payment...";
+  Color get highlightColor => _highlightColor;
+  String get selectedBible => _selectedBible;
+  bool get isPremium => _isPremium;
 
-  @override
-  void initState() {
-    super.initState();
+  Future<void> load() async {
+    _themeMode = await SettingsService.getThemeMode();
+    _fontSize = await SettingsService.getFontSize();
 
-    timer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) => checkPayment(),
-    );
+    _dailyVerse = await SettingsService.getDailyVerse();
+    _soundEnabled = await SettingsService.getSoundEnabled();
+    _keepScreenOn = await SettingsService.getKeepScreenOn();
+
+    _highlightColor = await SettingsService.getHighlightColor();
+    _selectedBible = await SettingsService.getBibleVersion();
+    _isPremium = await SettingsService.isPremium();
+
+    notifyListeners();
   }
 
-  Future<void> checkPayment() async {
-    try {
-      final data = await ApiService.paymentStatus(
-        widget.checkoutRequestId,
-      );
-
-      if (data["status"] == "completed") {
-        timer?.cancel();
-
-        // Activate premium on server
-        await ApiService.activatePremium(
-          phone: widget.phone,
-          plan: widget.plan,
-        );
-
-        // Activate premium locally
-        await UserService.activatePremium(
-          plan: widget.plan,
-          months: widget.months,
-        );
-
-        if (!mounted) return;
-
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => AlertDialog(
-            title: const Text("Payment Successful"),
-            content: Text(
-              "Your ${widget.plan} subscription has been activated successfully.",
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.popUntil(
-                    context,
-                    (route) => route.isFirst,
-                  );
-                },
-                child: const Text("Continue"),
-              ),
-            ],
-          ),
-        );
-
-        return;
-      }
-
-      if (data["status"] == "failed") {
-        timer?.cancel();
-
-        setState(() {
-          status = "Payment Failed";
-        });
-
-        return;
-      }
-
-      if (data["status"] == "cancelled") {
-        timer?.cancel();
-
-        setState(() {
-          status = "Payment Cancelled";
-        });
-
-        return;
-      }
-
-      setState(() {
-        status = "Waiting for M-PESA confirmation...";
-      });
-    } catch (e) {
-      setState(() {
-        status = "Checking payment...";
-      });
-    }
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    await SettingsService.saveThemeMode(mode);
+    notifyListeners();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Processing Payment"),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(25),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(),
-
-              const SizedBox(height: 30),
-
-              Text(
-                status,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              const Text(
-                "Complete the M-PESA prompt on your phone.\n"
-                "The payment status will be checked automatically every 5 seconds.",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey,
-                ),
-              ),
-
-              const SizedBox(height: 35),
-
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.refresh),
-                  label: const Text("Check Now"),
-                  onPressed: checkPayment,
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: TextButton.icon(
-                  icon: const Icon(Icons.close),
-                  label: const Text("Cancel"),
-                  onPressed: () {
-                    timer?.cancel();
-                    Navigator.pop(context);
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  Future<void> setFontSize(double size) async {
+    _fontSize = size;
+    await SettingsService.saveFontSize(size);
+    notifyListeners();
   }
 
-  @override
-  void dispose() {
-    timer?.cancel();
-    super.dispose();
+  Future<void> setDailyVerse(bool value) async {
+    _dailyVerse = value;
+    await SettingsService.saveDailyVerse(value);
+    notifyListeners();
+  }
+
+  Future<void> setSoundEnabled(bool value) async {
+    _soundEnabled = value;
+    await SettingsService.saveSoundEnabled(value);
+    notifyListeners();
+  }
+
+  Future<void> setKeepScreenOn(bool value) async {
+    _keepScreenOn = value;
+    await SettingsService.saveKeepScreenOn(value);
+    notifyListeners();
+  }
+
+  Future<void> setHighlightColor(Color color) async {
+    _highlightColor = color;
+    await SettingsService.saveHighlightColor(color);
+    notifyListeners();
+  }
+
+  Future<void> setBibleVersion(String version) async {
+    _selectedBible = version;
+    await SettingsService.saveBibleVersion(version);
+    notifyListeners();
+  }
+
+  Future<void> activatePremium() async {
+    _isPremium = true;
+    await SettingsService.activatePremium();
+    notifyListeners();
   }
 }
