@@ -1,77 +1,96 @@
-class UserModel {
-  final String id;
-  final String fullName;
-  final String email;
-  final String phone;
-  final String password;
+import 'dart:convert';
 
-  final bool isPremium;
+import 'package:shared_preferences/shared_preferences.dart';
 
-  final String plan;
+import '../models/user_model.dart';
 
-  final DateTime? subscribedOn;
-  final DateTime? expiryDate;
+class UserService {
+  static const String _userKey = "peace_m_user";
 
-  UserModel({
-    required this.id,
-    required this.fullName,
-    required this.email,
-    required this.phone,
-    required this.password,
-    this.isPremium = false,
-    this.plan = "",
-    this.subscribedOn,
-    this.expiryDate,
-  });
+  /// Save user
+  static Future<void> saveUser(UserModel user) async {
+    final prefs = await SharedPreferences.getInstance();
 
-  Map<String, dynamic> toJson() {
-    return {
-      "id": id,
-      "fullName": fullName,
-      "email": email,
-      "phone": phone,
-      "password": password,
-      "isPremium": isPremium,
-      "plan": plan,
-      "subscribedOn": subscribedOn?.toIso8601String(),
-      "expiryDate": expiryDate?.toIso8601String(),
-    };
-  }
-
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      id: json["id"],
-      fullName: json["fullName"],
-      email: json["email"],
-      phone: json["phone"],
-      password: json["password"],
-      isPremium: json["isPremium"] ?? false,
-      plan: json["plan"] ?? "",
-      subscribedOn: json["subscribedOn"] != null
-          ? DateTime.parse(json["subscribedOn"])
-          : null,
-      expiryDate: json["expiryDate"] != null
-          ? DateTime.parse(json["expiryDate"])
-          : null,
+    await prefs.setString(
+      _userKey,
+      jsonEncode(user.toJson()),
     );
   }
 
-  UserModel copyWith({
-    bool? isPremium,
-    String? plan,
-    DateTime? subscribedOn,
-    DateTime? expiryDate,
-  }) {
-    return UserModel(
-      id: id,
-      fullName: fullName,
-      email: email,
-      phone: phone,
-      password: password,
-      isPremium: isPremium ?? this.isPremium,
-      plan: plan ?? this.plan,
-      subscribedOn: subscribedOn ?? this.subscribedOn,
-      expiryDate: expiryDate ?? this.expiryDate,
+  /// Get saved user
+  static Future<UserModel?> getUser() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final data = prefs.getString(_userKey);
+
+    if (data == null) return null;
+
+    return UserModel.fromJson(
+      jsonDecode(data),
     );
+  }
+
+  /// Check whether a user account exists
+  static Future<bool> hasAccount() async {
+    return await getUser() != null;
+  }
+
+  /// Delete account (Logout)
+  static Future<void> deleteUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userKey);
+  }
+
+  /// Check if premium has expired
+  static Future<bool> premiumExpired() async {
+    final user = await getUser();
+
+    if (user == null) return true;
+
+    if (!user.isPremium) return true;
+
+    if (user.expiryDate == null) return true;
+
+    if (DateTime.now().isAfter(user.expiryDate!)) {
+      final updated = user.copyWith(
+        isPremium: false,
+        plan: "",
+        subscribedOn: null,
+        expiryDate: null,
+      );
+
+      await saveUser(updated);
+
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Activate Premium
+  static Future<void> activatePremium({
+    required String plan,
+    required int months,
+  }) async {
+    final user = await getUser();
+
+    if (user == null) return;
+
+    final start = DateTime.now();
+
+    final expiry = DateTime(
+      start.year,
+      start.month + months,
+      start.day,
+    );
+
+    final updated = user.copyWith(
+      isPremium: true,
+      plan: plan,
+      subscribedOn: start,
+      expiryDate: expiry,
+    );
+
+    await saveUser(updated);
   }
 }
