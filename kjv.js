@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -5,130 +6,143 @@ import 'package:http/http.dart' as http;
 
 import '../services/user_service.dart';
 
-class PaymentScreen extends StatefulWidget {
+class PaymentStatusScreen extends StatefulWidget {
+  final String checkoutRequestId;
   final Map plan;
 
-  const PaymentScreen({
+  const PaymentStatusScreen({
     super.key,
+    required this.checkoutRequestId,
     required this.plan,
   });
 
   @override
-  State<PaymentScreen> createState() => _PaymentScreenState();
+  State<PaymentStatusScreen> createState() =>
+      _PaymentStatusScreenState();
 }
 
-class _PaymentScreenState extends State<PaymentScreen> {
-  final phoneController = TextEditingController();
+class _PaymentStatusScreenState
+    extends State<PaymentStatusScreen> {
+  Timer? timer;
 
-  bool loading = false;
+  String status = "Waiting for payment...";
 
   @override
   void initState() {
     super.initState();
-    loadPhone();
+
+    timer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => checkPayment(),
+    );
   }
 
-  Future<void> loadPhone() async {
-    final user = await UserService.getUser();
-
-    if (user != null) {
-      phoneController.text = user.phone;
-      setState(() {});
-    }
-  }
-
-  Future<void> payNow() async {
-    setState(() {
-      loading = true;
-    });
-
+  Future<void> checkPayment() async {
     try {
-      final response = await http.post(
+      final response = await http.get(
         Uri.parse(
-          "YOUR_BACKEND_URL/stkpush",
+          "YOUR_BACKEND_URL/status/${widget.checkoutRequestId}",
         ),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({
-          "phoneNumber": phoneController.text.trim(),
-          "amount": widget.plan["price"],
-          "accountReference": "Peace M Bible",
-          "transactionDesc":
-              widget.plan["title"],
-        }),
       );
 
       final data = jsonDecode(response.body);
 
-      if (!mounted) return;
+      if (data["status"] == "completed") {
+        timer?.cancel();
 
-      Navigator.pushNamed(
-        context,
-        "/payment-status",
-        arguments: {
-          "checkoutRequestId":
-              data["checkoutRequestId"],
-          "plan": widget.plan,
-        },
-      );
+        await UserService.activatePremium(
+          plan: widget.plan["title"],
+          months: widget.plan["months"],
+        );
+
+        if (!mounted) return;
+
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) {
+            return AlertDialog(
+              title: const Text("Payment Successful"),
+              content: Text(
+                "Your ${widget.plan["title"]} subscription has been activated successfully.",
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.popUntil(
+                      context,
+                      (route) => route.isFirst,
+                    );
+                  },
+                  child: const Text("Continue"),
+                ),
+              ],
+            );
+          },
+        );
+      } else if (data["status"] == "failed") {
+        timer?.cancel();
+
+        setState(() {
+          status = "Payment Failed";
+        });
+      } else if (data["status"] == "cancelled") {
+        timer?.cancel();
+
+        setState(() {
+          status = "Payment Cancelled";
+        });
+      } else {
+        setState(() {
+          status = "Waiting for M-Pesa confirmation...";
+        });
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
+      setState(() {
+        status = "Checking payment...";
+      });
     }
+  }
 
-    setState(() {
-      loading = false;
-    });
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Confirm Payment"),
+        title: const Text("Processing Payment"),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: "Phone Number",
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(25),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+
+              const SizedBox(height: 25),
+
+              Text(
+                status,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18,
+                ),
               ),
-            ),
 
-            const SizedBox(height: 25),
+              const SizedBox(height: 20),
 
-            Card(
-              child: ListTile(
-                title: Text(widget.plan["title"]),
-                subtitle:
-                    Text("KSh ${widget.plan["price"]}"),
+              const Text(
+                "Complete the M-Pesa prompt on your phone.",
+                textAlign: TextAlign.center,
               ),
-            ),
-
-            const Spacer(),
-
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed:
-                    loading ? null : payNow,
-                child: loading
-                    ? const CircularProgressIndicator()
-                    : const Text(
-                        "Pay via M-Pesa",
-                      ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
