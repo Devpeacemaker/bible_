@@ -1,135 +1,97 @@
 import 'package:flutter/material.dart';
 
-import '../models/user_model.dart';
-import '../services/user_service.dart';
-
-class CreateAccountScreen extends StatefulWidget {
-  const CreateAccountScreen({super.key});
+class SubscriptionScreen extends StatefulWidget {
+  const SubscriptionScreen({super.key});
 
   @override
-  State<CreateAccountScreen> createState() =>
-      _CreateAccountScreenState();
+  State<SubscriptionScreen> createState() => _SubscriptionScreenState();
 }
 
-class _CreateAccountScreenState
-    extends State<CreateAccountScreen> {
-  final nameController = TextEditingController();
+class _SubscriptionScreenState extends State<SubscriptionScreen> {
+  int selectedPlan = 0;
 
-  final emailController = TextEditingController();
-
-  final phoneController = TextEditingController();
-
-  final passwordController = TextEditingController();
-
-  bool loading = false;
-
-  Future<void> createAccount() async {
-    if (nameController.text.isEmpty ||
-        emailController.text.isEmpty ||
-        phoneController.text.isEmpty ||
-        passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please fill all fields."),
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      loading = true;
-    });
-
-    final id =
-        "PMB${DateTime.now().millisecondsSinceEpoch}";
-
-    final user = UserModel(
-      id: id,
-      fullName: nameController.text.trim(),
-      email: emailController.text.trim(),
-      phone: phoneController.text.trim(),
-      password: passwordController.text,
-    );
-
-    await UserService.saveUser(user);
-
-    if (!mounted) return;
-
-    setState(() {
-      loading = false;
-    });
-
-    Navigator.pop(context, true);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          "Account created successfully.",
-        ),
-      ),
-    );
-  }
+  final plans = [
+    {
+      "title": "2 Months",
+      "price": 40,
+      "months": 2,
+    },
+    {
+      "title": "6 Months",
+      "price": 350,
+      "months": 6,
+    },
+    {
+      "title": "1 Year",
+      "price": 500,
+      "months": 12,
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Create Account"),
+        title: const Text("Choose Subscription"),
       ),
-      body: ListView(
+      body: Padding(
         padding: const EdgeInsets.all(20),
-        children: [
-          TextField(
-            controller: nameController,
-            decoration: const InputDecoration(
-              labelText: "Full Name",
+        child: Column(
+          children: [
+            const Text(
+              "Select a Premium Plan",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
 
-          const SizedBox(height: 15),
+            const SizedBox(height: 25),
 
-          TextField(
-            controller: emailController,
-            decoration: const InputDecoration(
-              labelText: "Email",
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          TextField(
-            controller: phoneController,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: "Phone Number",
-              hintText: "2547XXXXXXXX",
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          TextField(
-            controller: passwordController,
-            obscureText: true,
-            decoration: const InputDecoration(
-              labelText: "Password",
-            ),
-          ),
-
-          const SizedBox(height: 30),
-
-          SizedBox(
-            height: 55,
-            child: ElevatedButton(
-              onPressed: loading ? null : createAccount,
-              child: loading
-                  ? const CircularProgressIndicator()
-                  : const Text(
-                      "Create Account",
+            Expanded(
+              child: ListView.builder(
+                itemCount: plans.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                    child: RadioListTile(
+                      value: index,
+                      groupValue: selectedPlan,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedPlan = value!;
+                        });
+                      },
+                      title: Text(
+                        plans[index]["title"].toString(),
+                      ),
+                      subtitle: Text(
+                        "KSh ${plans[index]["price"]}",
+                      ),
                     ),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context,
+                    "/payment",
+                    arguments: plans[selectedPlan],
+                  );
+                },
+                child: const Text(
+                  "Continue",
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
