@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
+import '../services/user_service.dart';
 
 class PaymentStatusScreen extends StatefulWidget {
   final String checkoutRequestId;
@@ -48,9 +49,16 @@ class _PaymentStatusScreenState
       if (data["status"] == "completed") {
         timer?.cancel();
 
+        // Activate premium on server
         await ApiService.activatePremium(
           phone: widget.phone,
           plan: widget.plan,
+        );
+
+        // Activate premium locally
+        await UserService.activatePremium(
+          plan: widget.plan,
+          months: widget.months,
         );
 
         if (!mounted) return;
