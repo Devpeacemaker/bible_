@@ -8,14 +8,9 @@ class BibleService {
 
   static String _currentVersion = "kjv";
 
-  static const String apiUrl =
-      "https://peace-m-bible-backend.onrender.com";
+  static String get currentVersion => _currentVersion;
 
-  static String get currentVersion =>
-      _currentVersion;
-
-  static Future<void> setVersion(
-      String version) async {
+  static Future<void> setVersion(String version) async {
     _currentVersion = version;
 
     if (version == "eng") {
@@ -43,67 +38,58 @@ class BibleService {
         file = "assets/bibles/kjv.json";
     }
 
-    final jsonString =
-        await rootBundle.loadString(file);
+    final jsonString = await rootBundle.loadString(file);
 
     _books = json.decode(jsonString);
   }
+
+  static Future<List<String>> getEnglishChapter(
+    String book,
+    int chapter,
+  ) async {
+    final response = await http.get(
+      Uri.parse(
+        "https://bible-api.com/${Uri.encodeComponent("$book $chapter")}",
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to load English Bible");
+    }
+
+    final data = jsonDecode(response.body);
+
+    final verses = data["verses"] as List;
+
+    return verses
+        .map<String>((v) => v["text"].toString().trim())
+        .toList();
+  }
+
   static Future<List<String>> getChapter(
     int bookIndex,
     int chapterIndex,
   ) async {
-    if (_currentVersion == "eng") {
-      final response = await http.get(
-        Uri.parse(
-          "$apiUrl/bible/eng/$bookIndex/$chapterIndex",
-        ),
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception("Failed to load chapter");
-      }
-
-      final data = jsonDecode(response.body);
-
-      return List<String>.from(data["verses"]);
-    }
-
     await loadBible();
 
-    final chapters =
-        _books![bookIndex]["chapters"] as List;
+    final chapters = _books![bookIndex]["chapters"] as List;
 
-    final verses =
-        chapters[chapterIndex] as List;
+    final verses = chapters[chapterIndex] as List;
 
     return verses
         .map((e) => e.toString())
         .toList();
   }
 
-  static Future<List<Map<String, dynamic>>>
-      searchBible(String keyword) async {
-    if (_currentVersion == "eng") {
-      final response = await http.get(
-        Uri.parse(
-          "$apiUrl/search/eng?query=$keyword",
-        ),
-      );
-
-      if (response.statusCode != 200) {
-        return [];
-      }
-
-      return List<Map<String, dynamic>>.from(
-        jsonDecode(response.body),
-      );
-    }
-
+  static Future<List<Map<String, dynamic>>> searchBible(
+    String keyword,
+  ) async {
     await loadBible();
 
     keyword = keyword.toLowerCase();
 
     List<Map<String, dynamic>> results = [];
+
     for (int book = 0; book < _books!.length; book++) {
       final bookData = _books![book];
 
