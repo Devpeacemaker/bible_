@@ -1,96 +1,120 @@
-import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
-import 'package:shared_preferences/shared_preferences.dart';
+import '../models/saved_verse.dart';
+import '../providers/settings_provider.dart';
+import '../services/bible_service.dart';
+import '../services/library_service.dart';
+import '../services/api_service.dart';
+import '../services/user_service.dart';
+import 'version_screen.dart';
 
-import '../models/user_model.dart';
+class BibleScreen extends StatefulWidget {
+  final String book;
+  final int chapter;
+  final int bookIndex;
+  final int totalChapters;
+  final int? verse;
 
-class UserService {
-  static const String _userKey = "peace_m_user";
+  const BibleScreen({
+    super.key,
+    required this.book,
+    required this.chapter,
+    required this.bookIndex,
+    required this.totalChapters,
+    this.verse,
+  });
 
-  /// Save user
-  static Future<void> saveUser(UserModel user) async {
-    final prefs = await SharedPreferences.getInstance();
+  @override
+  State<BibleScreen> createState() => _BibleScreenState();
+}
 
-    await prefs.setString(
-      _userKey,
-      jsonEncode(user.toJson()),
-    );
+class _BibleScreenState extends State<BibleScreen> {
+  late int currentChapter;
+
+  List<String> verses = [];
+
+  bool loading = true;
+
+  final ScrollController _scrollController =
+      ScrollController();
+
+  final List<GlobalKey> _verseKeys = [];
+
+  int? selectedVerse;
+
+  Color highlightColor = Colors.yellow;
+
+  @override
+  void initState() {
+    super.initState();
+    currentChapter = widget.chapter;
+    loadChapter();
   }
 
-  /// Get saved user
-  static Future<UserModel?> getUser() async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<void> loadChapter() async {
+    setState(() {
+      loading = true;
+    });
 
-    final data = prefs.getString(_userKey);
-
-    if (data == null) return null;
-
-    return UserModel.fromJson(
-      jsonDecode(data),
-    );
-  }
-
-  /// Check whether a user account exists
-  static Future<bool> hasAccount() async {
-    return await getUser() != null;
-  }
-
-  /// Delete account (Logout)
-  static Future<void> deleteUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userKey);
-  }
-
-  /// Check if premium has expired
-  static Future<bool> premiumExpired() async {
-    final user = await getUser();
-
-    if (user == null) return true;
-
-    if (!user.isPremium) return true;
-
-    if (user.expiryDate == null) return true;
-
-    if (DateTime.now().isAfter(user.expiryDate!)) {
-      final updated = user.copyWith(
-        isPremium: false,
-        plan: "",
-        subscribedOn: null,
-        expiryDate: null,
+    try {
+      final settings =
+          Provider.of<SettingsProvider>(
+        context,
+        listen: false,
       );
 
-      await saveUser(updated);
+      // ==========================
+      // ENGLISH PREMIUM API
+      // ==========================
+      if (settings.selectedBible == "eng") {
+        final premium = await ApiService.premium(
+          UserService.currentPhone,
+        );
 
-      return true;
+        if (!premium) {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    const VersionScreen(),
+              ),
+            );
+          }
+
+          return;
+        }
+
+        verses =
+            await BibleService.getEnglishChapter(
+          widget.book,
+          currentChapter,
+        );
+      }
+
+      // ==========================
+      // OTHER BIBLES
+      // ==========================
+      else {
+        verses = await BibleService.getChapter(
+          widget.bookIndex,
+          currentChapter - 1,
+        );
+      }
+
+      _verseKeys
+        ..clear()
+        ..addAll(
+          List.generate(
+            verses.length,
+            (_) => GlobalKey(),
+          ),
+        );
+    } catch (e) {
+      verses = [
+        "Error loading chapter.\n$e",
+      ];
     }
-
-    return false;
-  }
-
-  /// Activate Premium
-  static Future<void> activatePremium({
-    required String plan,
-    required int months,
-  }) async {
-    final user = await getUser();
-
-    if (user == null) return;
-
-    final start = DateTime.now();
-
-    final expiry = DateTime(
-      start.year,
-      start.month + months,
-      start.day,
-    );
-
-    final updated = user.copyWith(
-      isPremium: true,
-      plan: plan,
-      subscribedOn: start,
-      expiryDate: expiry,
-    );
-
-    await saveUser(updated);
-  }
-}
