@@ -7,8 +7,6 @@ import '../models/saved_verse.dart';
 import '../providers/settings_provider.dart';
 import '../services/bible_service.dart';
 import '../services/library_service.dart';
-import '../services/api_service.dart';
-import '../services/user_service.dart';
 import 'version_screen.dart';
 
 class BibleScreen extends StatefulWidget {
@@ -38,8 +36,7 @@ class _BibleScreenState extends State<BibleScreen> {
 
   bool loading = true;
 
-  final ScrollController _scrollController =
-      ScrollController();
+  final ScrollController _scrollController = ScrollController();
 
   final List<GlobalKey> _verseKeys = [];
 
@@ -60,50 +57,10 @@ class _BibleScreenState extends State<BibleScreen> {
     });
 
     try {
-      final settings =
-          Provider.of<SettingsProvider>(
-        context,
-        listen: false,
+      verses = await BibleService.getChapter(
+        widget.bookIndex,
+        currentChapter - 1,
       );
-
-      // ==========================
-      // ENGLISH PREMIUM API
-      // ==========================
-      if (settings.selectedBible == "eng") {
-        final premium = await ApiService.premium(
-          UserService.currentPhone,
-        );
-
-        if (!premium) {
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                    const VersionScreen(),
-              ),
-            );
-          }
-
-          return;
-        }
-
-        verses =
-            await BibleService.getEnglishChapter(
-          widget.book,
-          currentChapter,
-        );
-      }
-
-      // ==========================
-      // OTHER BIBLES
-      // ==========================
-      else {
-        verses = await BibleService.getChapter(
-          widget.bookIndex,
-          currentChapter - 1,
-        );
-      }
 
       _verseKeys
         ..clear()
@@ -118,3 +75,37 @@ class _BibleScreenState extends State<BibleScreen> {
         "Error loading chapter.\n$e",
       ];
     }
+
+    if (mounted) {
+      final settings = Provider.of<SettingsProvider>(
+        context,
+        listen: false,
+      );
+
+      highlightColor = settings.highlightColor;
+    }
+
+    setState(() {
+      loading = false;
+    });
+
+    if (widget.verse != null &&
+        widget.chapter == currentChapter &&
+        widget.verse! <= _verseKeys.length) {
+      Future.delayed(
+        const Duration(milliseconds: 400),
+        () {
+          final ctx =
+              _verseKeys[widget.verse! - 1].currentContext;
+
+          if (ctx != null) {
+            Scrollable.ensureVisible(
+              ctx,
+              duration: const Duration(milliseconds: 700),
+              curve: Curves.easeInOut,
+            );
+          }
+        },
+      );
+    }
+  }
