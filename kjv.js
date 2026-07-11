@@ -1,90 +1,70 @@
-const fs = require("fs");
+import 'package:flutter/material.dart';
+import 'bible_screen.dart';
 
-const FILE = "./database.json";
+class ChapterScreen extends StatelessWidget {
+  final String book;
+  final int totalChapters;
+  final int bookIndex;
 
-if (!fs.existsSync(FILE)) {
-  fs.writeFileSync(
-    FILE,
-    JSON.stringify(
-      {
-        users: []
-      },
-      null,
-      2
-    )
-  );
-}
+  const ChapterScreen({
+    super.key,
+    required this.book,
+    required this.totalChapters,
+    required this.bookIndex,
+  });
 
-function load() {
-  return JSON.parse(fs.readFileSync(FILE, "utf8"));
-}
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(book),
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
+      ),
+      body: GridView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: totalChapters,
+        gridDelegate:
+            const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1,
+        ),
+        itemBuilder: (context, index) {
+          final chapter = index + 1;
 
-function save(data) {
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
-}
-
-function addUser(user) {
-  const db = load();
-
-  const exists = db.users.find(u => u.phone === user.phone);
-
-  if (!exists) {
-    db.users.push(user);
-    save(db);
-    return user;
+          return ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BibleScreen(
+                    book: book,
+                    chapter: chapter,
+                    bookIndex: bookIndex,
+                    totalChapters: totalChapters,
+                  ),
+                ),
+              );
+            },
+            child: Text(
+              chapter.toString(),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
-
-  return exists;
 }
-
-function getUser(phone) {
-  const db = load();
-  return db.users.find(u => u.phone === phone);
-}
-
-function activatePremium(phone, months) {
-  const db = load();
-
-  const user = db.users.find(u => u.phone === phone);
-
-  if (!user) return null;
-
-  const expiry = new Date();
-  expiry.setMonth(expiry.getMonth() + months);
-
-  user.premium = true;
-  user.expiry = expiry.toISOString();
-
-  save(db);
-
-  return user;
-}
-
-function premiumValid(phone) {
-  const db = load();
-
-  const user = db.users.find(u => u.phone === phone);
-
-  if (!user) return false;
-
-  if (!user.premium) return false;
-
-  if (!user.expiry) return false;
-
-  const valid = new Date(user.expiry) > new Date();
-
-  if (!valid) {
-    user.premium = false;
-    user.expiry = null;
-    save(db);
-  }
-
-  return valid;
-}
-
-module.exports = {
-  addUser,
-  getUser,
-  activatePremium,
-  premiumValid
-};
