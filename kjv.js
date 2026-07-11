@@ -1,214 +1,229 @@
 import 'package:flutter/material.dart';
-import 'books_screen.dart';
+import 'package:provider/provider.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+import '../providers/settings_provider.dart';
+import '../services/user_service.dart';
+import 'create_account_screen.dart';
+import 'subscription_screen.dart';
 
-  String getGreeting() {
-    final hour = DateTime.now().hour;
+class VersionScreen extends StatelessWidget {
+  const VersionScreen({super.key});
 
-    if (hour >= 5 && hour < 12) {
-      return "Good Morning 👋";
-    } else if (hour >= 12 && hour < 17) {
-      return "Good Afternoon ☀️";
-    } else if (hour >= 17 && hour < 21) {
-      return "Good Evening 🌇";
-    } else {
-      return "Good Night 🌙";
+  Future<void> openPremium(BuildContext context) async {
+    final hasAccount = await UserService.hasAccount();
+
+    if (!context.mounted) return;
+
+    if (!hasAccount) {
+      final created = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const CreateAccountScreen(),
+        ),
+      );
+
+      if (created == true && context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const SubscriptionScreen(),
+          ),
+        );
+      }
+
+      return;
     }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SubscriptionScreen(),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xffF5F5F5),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.deepPurple,
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+      appBar: AppBar(
+        title: const Text("Premium"),
+        centerTitle: true,
+      ),
 
-                  Text(
-                    getGreeting(),
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 18,
-                    ),
-                  ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
 
-                  const SizedBox(height: 8),
-
-                  const Text(
-                    "Peace M Bible",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  const Text(
-                    "Read • Pray • Grow",
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(20),
             ),
 
-            const SizedBox(height: 25),
-            // VERSE OF THE DAY
-            Builder(
-              builder: (context) {
-                final verses = [
-                  {
-                    "reference": "Psalm 23:1",
-                    "text":
-                        "The Lord is my shepherd; I shall not want.",
-                  },
-                  {
-                    "reference": "John 3:16",
-                    "text":
-                        "For God so loved the world, that he gave his only begotten Son.",
-                  },
-                  {
-                    "reference": "Romans 8:28",
-                    "text":
-                        "And we know that all things work together for good to them that love God.",
-                  },
-                  {
-                    "reference": "Philippians 4:13",
-                    "text":
-                        "I can do all things through Christ which strengtheneth me.",
-                  },
-                  {
-                    "reference": "Isaiah 41:10",
-                    "text":
-                        "Fear thou not; for I am with thee: be not dismayed; for I am thy God.",
-                  },
-                  {
-                    "reference": "Joshua 1:9",
-                    "text":
-                        "Be strong and of a good courage; be not afraid.",
-                  },
-                ];
+            child: Column(
+              children: [
 
-                final day = DateTime.now()
-                    .difference(DateTime(2026, 1, 1))
-                    .inDays;
+                const Icon(
+                  Icons.workspace_premium,
+                  color: Colors.amber,
+                  size: 70,
+                ),
 
-                final verse = verses[day % verses.length];
+                const SizedBox(height: 15),
 
-                return Card(
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                Text(
+                  "Peace M Bible Premium",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: settings.fontSize + 7,
+                    fontWeight: FontWeight.bold,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(
-                              Icons.auto_stories,
-                              color: Colors.deepPurple,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              "Verse of the Day",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.deepPurple,
-                              ),
-                            ),
-                          ],
-                        ),
+                ),
 
-                        const SizedBox(height: 18),
+                const SizedBox(height: 10),
 
-                        Text(
-                          "\"${verse["text"]}\"",
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontStyle: FontStyle.italic,
-                            height: 1.6,
-                          ),
-                        ),
-
-                        const SizedBox(height: 15),
-
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            verse["reference"]!,
-                            style: const TextStyle(
-                              color: Colors.deepPurple,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                Text(
+                  "Unlock premium Bible translations and powerful study features.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    height: 1.5,
+                    fontSize: settings.fontSize - 2,
                   ),
-                );
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 25),
+
+          premiumCard(
+            context,
+            settings,
+            icon: Icons.language,
+            title: "English Bible (ENG)",
+            subtitle: "Unlock the complete English Bible translation.",
+          ),
+
+          const SizedBox(height: 15),
+
+          premiumCard(
+            context,
+            settings,
+            icon: Icons.public,
+            title: "Kiswahili Bible (SWA)",
+            subtitle: "Soma Biblia kwa Kiswahili.",
+          ),
+
+          const SizedBox(height: 15),
+
+          premiumCard(
+            context,
+            settings,
+            icon: Icons.note_alt_outlined,
+            title: "Bible Notes",
+            subtitle: "Write and organize personal notes for every verse.",
+          ),
+
+          const SizedBox(height: 15),
+
+          premiumCard(
+            context,
+            settings,
+            icon: Icons.headphones,
+            title: "Audio Bible",
+            subtitle: "Listen to the Bible anytime, anywhere.",
+          ),
+
+          const SizedBox(height: 35),
+
+          SizedBox(
+            width: double.infinity,
+            height: 55,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+              onPressed: () {
+                openPremium(context);
               },
-            ),
-
-            const SizedBox(height: 25),
-
-            // OPEN BIBLE BUTTON
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 18,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(18),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BooksScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.menu_book),
-                label: const Text(
-                  "Open Bible",
-                  style: TextStyle(fontSize: 18),
+              icon: const Icon(Icons.workspace_premium),
+              label: Text(
+                "Upgrade to Premium",
+                style: TextStyle(
+                  fontSize: settings.fontSize,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
+          ),
 
-            const SizedBox(height: 30),
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+  Widget premiumCard(
+    BuildContext context,
+    SettingsProvider settings, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
 
-          ],
+        leading: CircleAvatar(
+          radius: 28,
+          backgroundColor:
+              Theme.of(context).colorScheme.primaryContainer,
+          child: Icon(
+            icon,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
+
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: settings.fontSize - 1,
+          ),
+        ),
+
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: settings.fontSize - 3,
+            ),
+          ),
+        ),
+
+        trailing: const Icon(
+          Icons.lock,
+          color: Colors.orange,
+        ),
+
+        onTap: () {
+          openPremium(context);
+        },
       ),
     );
   }
