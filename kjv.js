@@ -1,23 +1,27 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
+import '../services/api_service.dart';
 import '../services/user_service.dart';
 
 class PaymentScreen extends StatefulWidget {
-  final Map plan;
+  final String title;
+  final int amount;
+  final int months;
 
   const PaymentScreen({
     super.key,
-    required this.plan,
+    required this.title,
+    required this.amount,
+    required this.months,
   });
 
   @override
-  State<PaymentScreen> createState() => _PaymentScreenState();
+  State<PaymentScreen> createState() =>
+      _PaymentScreenState();
 }
 
-class _PaymentScreenState extends State<PaymentScreen> {
+class _PaymentScreenState
+    extends State<PaymentScreen> {
   final phoneController = TextEditingController();
 
   bool loading = false;
@@ -43,36 +47,30 @@ class _PaymentScreenState extends State<PaymentScreen> {
     });
 
     try {
-      final response = await http.post(
-        Uri.parse(
-          "YOUR_BACKEND_URL/stkpush",
-        ),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({
-          "phoneNumber": phoneController.text.trim(),
-          "amount": widget.plan["price"],
-          "accountReference": "Peace M Bible",
-          "transactionDesc":
-              widget.plan["title"],
-        }),
+      final response = await ApiService.stkPush(
+        phone: phoneController.text.trim(),
+        amount: widget.amount,
+        plan: widget.title,
       );
 
-      final data = jsonDecode(response.body);
-
       if (!mounted) return;
+
+      final checkoutId =
+          response["checkoutRequestId"];
 
       Navigator.pushNamed(
         context,
         "/payment-status",
         arguments: {
-          "checkoutRequestId":
-              data["checkoutRequestId"],
-          "plan": widget.plan,
+          "checkoutRequestId": checkoutId,
+          "phone": phoneController.text.trim(),
+          "plan": widget.title,
+          "months": widget.months,
         },
       );
     } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
@@ -80,9 +78,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
       );
     }
 
-    setState(() {
-      loading = false;
-    });
+    if (mounted) {
+      setState(() {
+        loading = false;
+      });
+    }
   }
 
   @override
@@ -91,25 +91,47 @@ class _PaymentScreenState extends State<PaymentScreen> {
       appBar: AppBar(
         title: const Text("Confirm Payment"),
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+
             TextField(
               controller: phoneController,
               keyboardType: TextInputType.phone,
               decoration: const InputDecoration(
-                labelText: "Phone Number",
+                labelText: "M-PESA Phone Number",
+                hintText: "2547XXXXXXXX",
+                prefixIcon: Icon(Icons.phone),
+                border: OutlineInputBorder(),
               ),
             ),
 
             const SizedBox(height: 25),
 
             Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
               child: ListTile(
-                title: Text(widget.plan["title"]),
-                subtitle:
-                    Text("KSh ${widget.plan["price"]}"),
+                leading: const Icon(
+                  Icons.workspace_premium,
+                  color: Colors.amber,
+                ),
+
+                title: Text(
+                  widget.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                subtitle: Text(
+                  "KSh ${widget.amount}\n"
+                  "${widget.months} months premium access",
+                ),
               ),
             ),
 
@@ -118,14 +140,26 @@ class _PaymentScreenState extends State<PaymentScreen> {
             SizedBox(
               width: double.infinity,
               height: 55,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
+                icon: loading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.payment),
+
+                label: Text(
+                  loading
+                      ? "Sending Request..."
+                      : "Pay via M-PESA",
+                ),
+
                 onPressed:
                     loading ? null : payNow,
-                child: loading
-                    ? const CircularProgressIndicator()
-                    : const Text(
-                        "Pay via M-Pesa",
-                      ),
               ),
             ),
           ],
