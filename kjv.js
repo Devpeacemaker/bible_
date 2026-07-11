@@ -32,7 +32,7 @@ class PeaceMBibleApp extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Peace M Bible',
+      title: "Peace M Bible",
 
       themeMode: settings.themeMode,
 
@@ -49,32 +49,37 @@ class PeaceMBibleApp extends StatelessWidget {
       ),
 
       routes: {
-        "/create-account": (_) => const CreateAccountScreen(),
+        "/create-account": (_) =>
+            const CreateAccountScreen(),
 
-        "/subscription": (_) => const SubscriptionScreen(),
+        "/subscription": (_) =>
+            const SubscriptionScreen(),
 
         "/payment": (context) {
           final plan =
-              ModalRoute.of(context)!.settings.arguments
-                  as Map;
+              ModalRoute.of(context)!
+                  .settings
+                  .arguments as Map;
 
           return PaymentScreen(
-  title: plan["title"],
-  amount: plan["amount"],
-  months: plan["months"],
-);
-
+            title: plan["title"],
+            amount: plan["price"],
+            months: plan["months"],
+          );
         },
 
         "/payment-status": (context) {
           final args =
-              ModalRoute.of(context)!.settings.arguments
-                  as Map;
+              ModalRoute.of(context)!
+                  .settings
+                  .arguments as Map;
 
           return PaymentStatusScreen(
             checkoutRequestId:
                 args["checkoutRequestId"],
+            phone: args["phone"],
             plan: args["plan"],
+            months: args["months"],
           );
         },
       },
