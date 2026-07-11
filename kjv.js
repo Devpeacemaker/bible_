@@ -1,93 +1,131 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
-class SubscriptionScreen extends StatefulWidget {
-  const SubscriptionScreen({super.key});
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+import '../services/user_service.dart';
+
+class PaymentScreen extends StatefulWidget {
+  final Map plan;
+
+  const PaymentScreen({
+    super.key,
+    required this.plan,
+  });
 
   @override
-  State<SubscriptionScreen> createState() => _SubscriptionScreenState();
+  State<PaymentScreen> createState() => _PaymentScreenState();
 }
 
-class _SubscriptionScreenState extends State<SubscriptionScreen> {
-  int selectedPlan = 0;
+class _PaymentScreenState extends State<PaymentScreen> {
+  final phoneController = TextEditingController();
 
-  final plans = [
-    {
-      "title": "2 Months",
-      "price": 40,
-      "months": 2,
-    },
-    {
-      "title": "6 Months",
-      "price": 350,
-      "months": 6,
-    },
-    {
-      "title": "1 Year",
-      "price": 500,
-      "months": 12,
-    },
-  ];
+  bool loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    loadPhone();
+  }
+
+  Future<void> loadPhone() async {
+    final user = await UserService.getUser();
+
+    if (user != null) {
+      phoneController.text = user.phone;
+      setState(() {});
+    }
+  }
+
+  Future<void> payNow() async {
+    setState(() {
+      loading = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse(
+          "YOUR_BACKEND_URL/stkpush",
+        ),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "phoneNumber": phoneController.text.trim(),
+          "amount": widget.plan["price"],
+          "accountReference": "Peace M Bible",
+          "transactionDesc":
+              widget.plan["title"],
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (!mounted) return;
+
+      Navigator.pushNamed(
+        context,
+        "/payment-status",
+        arguments: {
+          "checkoutRequestId":
+              data["checkoutRequestId"],
+          "plan": widget.plan,
+        },
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+        ),
+      );
+    }
+
+    setState(() {
+      loading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Choose Subscription"),
+        title: const Text("Confirm Payment"),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const Text(
-              "Select a Premium Plan",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+            TextField(
+              controller: phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: "Phone Number",
               ),
             ),
 
             const SizedBox(height: 25),
 
-            Expanded(
-              child: ListView.builder(
-                itemCount: plans.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: RadioListTile(
-                      value: index,
-                      groupValue: selectedPlan,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedPlan = value!;
-                        });
-                      },
-                      title: Text(
-                        plans[index]["title"].toString(),
-                      ),
-                      subtitle: Text(
-                        "KSh ${plans[index]["price"]}",
-                      ),
-                    ),
-                  );
-                },
+            Card(
+              child: ListTile(
+                title: Text(widget.plan["title"]),
+                subtitle:
+                    Text("KSh ${widget.plan["price"]}"),
               ),
             ),
+
+            const Spacer(),
 
             SizedBox(
               width: double.infinity,
               height: 55,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(
-                    context,
-                    "/payment",
-                    arguments: plans[selectedPlan],
-                  );
-                },
-                child: const Text(
-                  "Continue",
-                  style: TextStyle(fontSize: 18),
-                ),
+                onPressed:
+                    loading ? null : payNow,
+                child: loading
+                    ? const CircularProgressIndicator()
+                    : const Text(
+                        "Pay via M-Pesa",
+                      ),
               ),
             ),
           ],
