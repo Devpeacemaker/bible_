@@ -1,533 +1,305 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 
-import '../models/saved_verse.dart';
-import '../providers/settings_provider.dart';
+import '../data/bible_books.dart';
 import '../services/api_service.dart';
-import '../services/bible_service.dart';
-import '../services/library_service.dart';
 import '../services/user_service.dart';
-import 'version_screen.dart';
 
-class BibleScreen extends StatefulWidget {
-  final String book;
-  final int chapter;
-  final int bookIndex;
-  final int totalChapters;
-  final int? verse;
+import 'chapter_screen.dart';
+import 'create_account_screen.dart';
+import 'subscription_screen.dart';
 
-  const BibleScreen({
-    super.key,
-    required this.book,
-    required this.chapter,
-    required this.bookIndex,
-    required this.totalChapters,
-    this.verse,
-  });
+class BooksScreen extends StatefulWidget {
+  const BooksScreen({super.key});
 
   @override
-  State<BibleScreen> createState() => _BibleScreenState();
+  State<BooksScreen> createState() =>
+      _BooksScreenState();
 }
 
-class _BibleScreenState extends State<BibleScreen> {
-  late int currentChapter;
+class _BooksScreenState
+    extends State<BooksScreen> {
+  String search = "";
 
-  List<String> verses = [];
+  Future<bool> checkPremium() async {
+    final hasAccount =
+        await UserService.hasAccount();
 
-  bool loading = true;
+    if (!hasAccount) {
+      if (!mounted) return false;
 
-  final ScrollController _scrollController = ScrollController();
-
-  final List<GlobalKey> _verseKeys = [];
-
-  int? selectedVerse;
-
-  Color highlightColor = Colors.yellow;
-
-  @override
-  void initState() {
-    super.initState();
-    currentChapter = widget.chapter;
-    loadChapter();
-  }
-
-  Future<void> loadChapter() async {
-  setState(() {
-    loading = true;
-  });
-
-  try {
-    final settings = Provider.of<SettingsProvider>(
-      context,
-      listen: false,
-    );
-
-    if (settings.selectedBible == "eng") {
-      verses = await BibleService.getEnglishChapter(
-        widget.book,
-        currentChapter,
-      );
-    } else {
-      verses = await BibleService.getChapter(
-        widget.bookIndex,
-        currentChapter - 1,
-      );
-    }
-
-    _verseKeys
-      ..clear()
-      ..addAll(
-        List.generate(
-          verses.length,
-          (_) => GlobalKey(),
+      final created = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              const CreateAccountScreen(),
         ),
       );
-  } catch (e) {
-    verses = [
-      "Error loading chapter.\n$e",
-    ];
-  }
 
-  if (mounted) {
-    final settings = Provider.of<SettingsProvider>(
-      context,
-      listen: false,
-    );
-
-    highlightColor = settings.highlightColor;
-  }
-
-  setState(() {
-    loading = false;
-  });
-
-  if (widget.verse != null &&
-      widget.chapter == currentChapter &&
-      widget.verse! <= _verseKeys.length) {
-    Future.delayed(
-      const Duration(milliseconds: 400),
-      () {
-        final ctx =
-            _verseKeys[widget.verse! - 1].currentContext;
-
-        if (ctx != null) {
-          Scrollable.ensureVisible(
-            ctx,
-            duration: const Duration(milliseconds: 700),
-            curve: Curves.easeInOut,
-          );
-        }
-      },
-    );
-  }
-}
-  void previousChapter() {
-    if (currentChapter > 1) {
-      currentChapter--;
-      loadChapter();
+      if (created != true) {
+        return false;
+      }
     }
-  }
 
-  void nextChapter() {
-    if (currentChapter < widget.totalChapters) {
-      currentChapter++;
-      loadChapter();
+    final user =
+        await UserService.getUser();
+
+    if (user == null) {
+      return false;
     }
-  }
 
- Future<void> switchBibleVersion() async {
-  final settings = Provider.of<SettingsProvider>(
-    context,
-    listen: false,
-  );
-
-  // KJV → English
-  if (settings.selectedBible == "kjv") {
-    await settings.setBibleVersion("eng");
-    await BibleService.setVersion("eng");
-    await loadChapter();
-    return;
-  }
-
-  // English → Swahili
-  if (settings.selectedBible == "eng") {
-    await settings.setBibleVersion("swa");
-    await BibleService.setVersion("swa");
-    await loadChapter();
-    return;
-  }
-
-  // Swahili → KJV
-  await settings.setBibleVersion("kjv");
-  await BibleService.setVersion("kjv");
-  await loadChapter();
-}
-
-  Future<void> showVerseMenu(
-    int verseNumber,
-    String verseText,
-  ) async {
-    final verse = SavedVerse(
-      book: widget.book,
-      chapter: currentChapter,
-      verse: verseNumber,
-      text: verseText,
+    final premium =
+        await ApiService.premium(
+      user.phone,
     );
 
-    await showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.highlight),
-                title: const Text(
-                  "Highlight Verse",
-                ),
-                onTap: () {
-                  Navigator.pop(context);
+    if (!premium) {
+      if (!mounted) return false;
 
-                  setState(() {
-                    selectedVerse = verseNumber;
-                  });
-                },
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              const SubscriptionScreen(),
+        ),
+      );
+
+      return false;
+    }
+
+    return true;
+  }
+
+  int getChapterCount(String book) {
+    const chapters = {
+      "Genesis": 50,
+      "Exodus": 40,
+      "Leviticus": 27,
+      "Numbers": 36,
+      "Deuteronomy": 34,
+      "Joshua": 24,
+      "Judges": 21,
+      "Ruth": 4,
+      "1 Samuel": 31,
+      "2 Samuel": 24,
+      "1 Kings": 22,
+      "2 Kings": 25,
+      "1 Chronicles": 29,
+      "2 Chronicles": 36,
+      "Ezra": 10,
+      "Nehemiah": 13,
+      "Esther": 10,
+      "Job": 42,
+      "Psalms": 150,
+      "Proverbs": 31,
+      "Ecclesiastes": 12,
+      "Song of Solomon": 8,
+      "Isaiah": 66,
+      "Jeremiah": 52,
+      "Lamentations": 5,
+      "Ezekiel": 48,
+      "Daniel": 12,
+      "Hosea": 14,
+      "Joel": 3,
+      "Amos": 9,
+      "Obadiah": 1,
+      "Jonah": 4,
+      "Micah": 7,
+      "Nahum": 3,
+      "Habakkuk": 3,
+      "Zephaniah": 3,
+      "Haggai": 2,
+      "Zechariah": 14,
+      "Malachi": 4,
+      "Matthew": 28,
+      "Mark": 16,
+      "Luke": 24,
+      "John": 21,
+      "Acts": 28,
+      "Romans": 16,
+      "1 Corinthians": 16,
+      "2 Corinthians": 13,
+      "Galatians": 6,
+      "Ephesians": 6,
+      "Philippians": 4,
+      "Colossians": 4,
+      "1 Thessalonians": 5,
+      "2 Thessalonians": 3,
+      "1 Timothy": 6,
+      "2 Timothy": 4,
+      "Titus": 3,
+      "Philemon": 1,
+      "Hebrews": 13,
+      "James": 5,
+      "1 Peter": 5,
+      "2 Peter": 3,
+      "1 John": 5,
+      "2 John": 1,
+      "3 John": 1,
+      "Jude": 1,
+      "Revelation": 22,
+    };
+
+    return chapters[book] ?? 1;
+  }
+  @override
+  Widget build(BuildContext context) {
+    final oldBooks = BibleBooks.oldTestament
+        .where(
+          (b) => b
+              .toLowerCase()
+              .contains(search.toLowerCase()),
+        )
+        .toList();
+
+    final newBooks = BibleBooks.newTestament
+        .where(
+          (b) => b
+              .toLowerCase()
+              .contains(search.toLowerCase()),
+        )
+        .toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Bible Books"),
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding:
+                const EdgeInsets.all(16),
+            child: TextField(
+              decoration:
+                  const InputDecoration(
+                hintText:
+                    "Search Bible book...",
+                prefixIcon:
+                    Icon(Icons.search),
               ),
+              onChanged: (value) {
+                setState(() {
+                  search = value;
+                });
+              },
+            ),
+          ),
 
-              ListTile(
-                leading:
-                    const Icon(Icons.color_lens),
-                title: const Text(
-                  "Highlight Color",
+          Expanded(
+            child: ListView(
+              children: [
+                const Padding(
+                  padding:
+                      EdgeInsets.all(8),
+                  child: Text(
+                    "OLD TESTAMENT",
+                    style: TextStyle(
+                      fontWeight:
+                          FontWeight.bold,
+                      color:
+                          Colors.purple,
+                    ),
+                  ),
                 ),
-                onTap: () {
-                  Navigator.pop(context);
 
-                  showDialog(
-                    context: this.context,
-                    builder: (_) {
-                      return AlertDialog(
-                        title: const Text(
-                          "Choose Highlight Color",
-                        ),
-                        content: Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: [
-                            Colors.yellow,
-                            Colors.green,
-                            Colors.orange,
-                            Colors.pink,
-                            Colors.blue,
-                            Colors.purple,
-                            Colors.red,
-                            Colors.teal,
-                          ].map((color) {
-                            return GestureDetector(
-                              onTap: () async {
-                                final settings =
-                                    Provider.of<
-                                        SettingsProvider>(
-                                  this.context,
-                                  listen: false,
-                                );
+                ...oldBooks.map((book) {
+                  final index = BibleBooks
+                      .oldTestament
+                      .indexOf(book);
 
-                                await settings
-                                    .setHighlightColor(
-                                        color);
+                  return ListTile(
+                    leading: const Icon(
+                      Icons.menu_book,
+                    ),
+                    title: Text(book),
+                    subtitle: Text(
+                      "${getChapterCount(book)} Chapters",
+                    ),
+                    onTap: () async {
+                      final allowed =
+                          await checkPremium();
 
-                                setState(() {
-                                  highlightColor =
-                                      color;
-                                });
+                      if (!allowed) return;
 
-                                if (mounted) {
-                                  Navigator.pop(
-                                      this.context);
-                                }
-                              },
-                              child: CircleAvatar(
-                                radius: 20,
-                                backgroundColor:
-                                    color,
-                              ),
-                            );
-                          }).toList(),
+                      if (!mounted) return;
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ChapterScreen(
+                            book: book,
+                            totalChapters:
+                                getChapterCount(
+                                    book),
+                            bookIndex:
+                                index,
+                          ),
                         ),
                       );
                     },
                   );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.bookmark),
-                title: const Text("Bookmark"),
-                onTap: () async {
-                  await LibraryService.addBookmark(verse);
+                }),
 
-                  if (context.mounted) {
-                    Navigator.pop(context);
-
-                    ScaffoldMessenger.of(this.context)
-                        .showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "Verse bookmarked",
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(Icons.favorite),
-                title: const Text("Favorite"),
-                onTap: () async {
-                  await LibraryService.addFavorite(verse);
-
-                  if (context.mounted) {
-                    Navigator.pop(context);
-
-                    ScaffoldMessenger.of(this.context)
-                        .showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "Added to favorites",
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(Icons.copy),
-                title: const Text("Copy Verse"),
-                onTap: () async {
-                  await Clipboard.setData(
-                    ClipboardData(
-                      text:
-                          "${widget.book} $currentChapter:$verseNumber\n\n$verseText",
-                    ),
-                  );
-
-                  if (context.mounted) {
-                    Navigator.pop(context);
-
-                    ScaffoldMessenger.of(this.context)
-                        .showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "Verse copied",
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(Icons.share),
-                title: const Text("Share Verse"),
-                onTap: () async {
-                  await Share.share(
-                    "${widget.book} $currentChapter:$verseNumber\n\n$verseText",
-                  );
-
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                  }
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(Icons.close),
-                title: const Text("Cancel"),
-                onTap: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final settings =
-        Provider.of<SettingsProvider>(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "${widget.book} $currentChapter (${settings.selectedBible.toUpperCase()})",
-        ),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
-      ),
-      body: loading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
-          : GestureDetector(
-              onHorizontalDragEnd: (details) async {
-                if (details.primaryVelocity == null) return;
-
-                await switchBibleVersion();
-              },
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: verses.length,
-                      itemBuilder: (context, index) {
-                        final verseNumber = index + 1;
-
-                        final bool searchedVerse =
-                            widget.verse == verseNumber &&
-                                widget.chapter ==
-                                    currentChapter;
-
-                        final bool highlighted =
-                            selectedVerse ==
-                                verseNumber;
-
-                        return AnimatedContainer(
-                          key: _verseKeys[index],
-                          duration: const Duration(
-                            milliseconds: 300,
-                          ),
-                          margin:
-                              const EdgeInsets.only(
-                            bottom: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: highlighted
-                                ? highlightColor
-                                : searchedVerse
-                                    ? Colors.yellow
-                                        .shade200
-                                    : Colors.transparent,
-                            borderRadius:
-                                BorderRadius.circular(
-                                    12),
-                          ),
-                          child: InkWell(
-                            borderRadius:
-                                BorderRadius.circular(
-                                    12),
-                            onLongPress: () {
-                              showVerseMenu(
-                                verseNumber,
-                                verses[index],
-                              );
-                            },
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.all(
-                                      10),
-                              child: RichText(
-                                text: TextSpan(
-                                  style: TextStyle(
-                                    fontSize:
-                                        settings
-                                            .fontSize,
-                                    color: Theme.of(
-                                            context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.color,
-                                    height: 1.8,
-                                  ),
-                                  children: [
-                                    TextSpan(
-                                      text:
-                                          "$verseNumber ",
-                                      style:
-                                          const TextStyle(
-                                        color: Colors
-                                            .purple,
-                                        fontWeight:
-                                            FontWeight
-                                                .bold,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text:
-                                          verses[index],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                const Padding(
+                  padding:
+                      EdgeInsets.all(8),
+                  child: Text(
+                    "NEW TESTAMENT",
+                    style: TextStyle(
+                      fontWeight:
+                          FontWeight.bold,
+                      color:
+                          Colors.purple,
                     ),
                   ),
+                ),
+                ...newBooks.map((book) {
+                  final index =
+                      39 +
+                          BibleBooks
+                              .newTestament
+                              .indexOf(book);
 
-                  Container(
-                    padding:
-                        const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .cardColor,
-                      border: Border(
-                        top: BorderSide(
-                          color:
-                              Colors.grey.shade300,
-                        ),
-                      ),
+                  return ListTile(
+                    leading: const Icon(
+                      Icons.menu_book,
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child:
-                              ElevatedButton.icon(
-                            onPressed:
-                                currentChapter == 1
-                                    ? null
-                                    : previousChapter,
-                            icon: const Icon(
-                              Icons.arrow_back,
-                            ),
-                            label: const Text(
-                              "Previous",
-                            ),
+                    title: Text(book),
+                    subtitle: Text(
+                      "${getChapterCount(book)} Chapters",
+                    ),
+                    onTap: () async {
+                      final allowed =
+                          await checkPremium();
+
+                      if (!allowed) return;
+
+                      if (!mounted) return;
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ChapterScreen(
+                            book: book,
+                            totalChapters:
+                                getChapterCount(
+                                    book),
+                            bookIndex:
+                                index,
                           ),
                         ),
-
-                        const SizedBox(width: 12),
-
-                        Expanded(
-                          child:
-                              ElevatedButton.icon(
-                            onPressed:
-                                currentChapter ==
-                                        widget
-                                            .totalChapters
-                                    ? null
-                                    : nextChapter,
-                            icon: const Icon(
-                              Icons.arrow_forward,
-                            ),
-                            label: const Text(
-                              "Next",
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                      );
+                    },
+                  );
+                }),
+              ],
             ),
+          ),
+        ],
+      ),
     );
   }
 }
