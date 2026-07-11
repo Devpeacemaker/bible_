@@ -1,86 +1,112 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
-import '../services/user_service.dart';
 
-class PaymentScreen extends StatefulWidget {
-  final String title;
-  final int amount;
+class PaymentStatusScreen extends StatefulWidget {
+  final String checkoutRequestId;
+  final String phone;
+  final String plan;
   final int months;
 
-  const PaymentScreen({
+  const PaymentStatusScreen({
     super.key,
-    required this.title,
-    required this.amount,
+    required this.checkoutRequestId,
+    required this.phone,
+    required this.plan,
     required this.months,
   });
 
   @override
-  State<PaymentScreen> createState() =>
-      _PaymentScreenState();
+  State<PaymentStatusScreen> createState() =>
+      _PaymentStatusScreenState();
 }
 
-class _PaymentScreenState
-    extends State<PaymentScreen> {
-  final phoneController = TextEditingController();
+class _PaymentStatusScreenState
+    extends State<PaymentStatusScreen> {
+  Timer? timer;
 
-  bool loading = false;
+  String status = "Waiting for M-PESA payment...";
 
   @override
   void initState() {
     super.initState();
-    loadPhone();
+
+    timer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => checkPayment(),
+    );
   }
 
-  Future<void> loadPhone() async {
-    final user = await UserService.getUser();
-
-    if (user != null) {
-      phoneController.text = user.phone;
-      setState(() {});
-    }
-  }
-
-  Future<void> payNow() async {
-    setState(() {
-      loading = true;
-    });
-
+  Future<void> checkPayment() async {
     try {
-      final response = await ApiService.stkPush(
-        phone: phoneController.text.trim(),
-        amount: widget.amount,
-        plan: widget.title,
+      final data = await ApiService.paymentStatus(
+        widget.checkoutRequestId,
       );
 
-      if (!mounted) return;
+      if (data["status"] == "completed") {
+        timer?.cancel();
 
-      final checkoutId =
-          response["checkoutRequestId"];
+        await ApiService.activatePremium(
+          phone: widget.phone,
+          plan: widget.plan,
+        );
 
-      Navigator.pushNamed(
-        context,
-        "/payment-status",
-        arguments: {
-          "checkoutRequestId": checkoutId,
-          "phone": phoneController.text.trim(),
-          "plan": widget.title,
-          "months": widget.months,
-        },
-      );
-    } catch (e) {
-      if (!mounted) return;
+        if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
-    }
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => AlertDialog(
+            title: const Text("Payment Successful"),
+            content: Text(
+              "Your ${widget.plan} subscription has been activated successfully.",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.popUntil(
+                    context,
+                    (route) => route.isFirst,
+                  );
+                },
+                child: const Text("Continue"),
+              ),
+            ],
+          ),
+        );
 
-    if (mounted) {
+        return;
+      }
+
+      if (data["status"] == "failed") {
+        timer?.cancel();
+
+        setState(() {
+          status = "Payment Failed";
+        });
+
+        return;
+      }
+
+      if (data["status"] == "cancelled") {
+        timer?.cancel();
+
+        setState(() {
+          status = "Payment Cancelled";
+        });
+
+        return;
+      }
+
       setState(() {
-        loading = false;
+        status = "Waiting for M-PESA confirmation...";
+      });
+    } catch (e) {
+      setState(() {
+        status = "Checking payment...";
       });
     }
   }
@@ -89,82 +115,74 @@ class _PaymentScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Confirm Payment"),
+        title: const Text("Processing Payment"),
       ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(25),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
 
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
+              const SizedBox(height: 30),
 
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: "M-PESA Phone Number",
-                hintText: "2547XXXXXXXX",
-                prefixIcon: Icon(Icons.phone),
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.workspace_premium,
-                  color: Colors.amber,
-                ),
-
-                title: Text(
-                  widget.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                subtitle: Text(
-                  "KSh ${widget.amount}\n"
-                  "${widget.months} months premium access",
+              Text(
+                status,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
 
-            const Spacer(),
+              const SizedBox(height: 20),
 
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton.icon(
-                icon: loading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.payment),
-
-                label: Text(
-                  loading
-                      ? "Sending Request..."
-                      : "Pay via M-PESA",
+              const Text(
+                "Complete the M-PESA prompt on your phone.\n"
+                "The payment status will be checked automatically every 5 seconds.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey,
                 ),
-
-                onPressed:
-                    loading ? null : payNow,
               ),
-            ),
-          ],
+
+              const SizedBox(height: 35),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.refresh),
+                  label: const Text("Check Now"),
+                  onPressed: checkPayment,
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.close),
+                  label: const Text("Cancel"),
+                  onPressed: () {
+                    timer?.cancel();
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
   }
 }
