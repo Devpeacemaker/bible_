@@ -7,8 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const API_KEY =
-"YOUR_MAKAMESCO_SECRET_KEY";
+const API_KEY = "sk_ea6fa5e65d2dc2baf13d7bb6c013c3bac4fc02f9caff820579903cd19da07692";
 
 // STK Push
 app.post("/stkpush", async (req, res) => {
