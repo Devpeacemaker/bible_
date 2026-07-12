@@ -1,98 +1,98 @@
 @override
 Widget build(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
   return Scaffold(
     appBar: AppBar(
       title: Text(
-        book,
+        reference.isEmpty
+            ? "${widget.book} ${widget.chapter}"
+            : reference,
         style: const TextStyle(
           fontWeight: FontWeight.bold,
         ),
       ),
       centerTitle: true,
-      elevation: 0,
       backgroundColor: Colors.deepPurple,
     ),
 
-    body: Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color(0xfff5f3ff),
-            Colors.white,
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
+    body: loading
+        ? const Center(
+            child: CircularProgressIndicator(),
+          )
 
-      child: GridView.builder(
-        padding: const EdgeInsets.all(18),
-
-        itemCount: chapters,
-
-        gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          crossAxisSpacing: 14,
-          mainAxisSpacing: 14,
-          childAspectRatio: 1.1,
-        ),
-
-        itemBuilder: (context, index) {
-          final chapter = index + 1;
-
-          return InkWell(
-            borderRadius: BorderRadius.circular(18),
-
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => EngBibleScreen(
-                    book: book,
-                    chapter: chapter,
-                  ),
-                ),
-              );
-            },
-
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-
-                gradient: const LinearGradient(
-                  colors: [
-                    Colors.deepPurple,
-                    Colors.purple,
-                  ],
-
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-
-                boxShadow: const [
-                  BoxShadow(
-                    blurRadius: 6,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-
-              child: Center(
-                child: Text(
-                  "$chapter",
-
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+        : Container(
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.black
+                  : const Color(0xfff7f5ff),
             ),
-          );
-        },
-      ),
-    ),
+
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+
+              itemCount: verses.length,
+
+              itemBuilder: (context, index) {
+                final verse = verses[index];
+
+                return Card(
+                  elevation: 2,
+
+                  margin: const EdgeInsets.only(
+                    bottom: 14,
+                  ),
+
+                  color: isDark
+                      ? const Color(0xff1e1e1e)
+                      : Colors.white,
+
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(16),
+                  ),
+
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(
+                          color: isDark
+                              ? Colors.white
+                              : Colors.black87,
+
+                          fontSize: 18,
+
+                          height: 1.7,
+                        ),
+
+                        children: [
+
+                          TextSpan(
+                            text:
+                                "${verse["verse"]} ",
+
+                            style: const TextStyle(
+                              fontWeight:
+                                  FontWeight.bold,
+
+                              color:
+                                  Colors.deepPurple,
+                            ),
+                          ),
+
+                          TextSpan(
+                            text:
+                                verse["text"],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
   );
 }
