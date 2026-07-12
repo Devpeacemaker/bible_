@@ -2,9 +2,9 @@
 Widget build(BuildContext context) {
   return Scaffold(
     appBar: AppBar(
-      title: const Text(
-        "English Bible",
-        style: TextStyle(
+      title: Text(
+        book,
+        style: const TextStyle(
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -18,107 +18,77 @@ Widget build(BuildContext context) {
         gradient: LinearGradient(
           colors: [
             Color(0xfff5f3ff),
-            Color(0xffffffff),
+            Colors.white,
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
       ),
 
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+      child: GridView.builder(
+        padding: const EdgeInsets.all(18),
 
-        itemCount: books.length,
+        itemCount: chapters,
+
+        gridDelegate:
+            const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14,
+          childAspectRatio: 1.1,
+        ),
 
         itemBuilder: (context, index) {
-          final book = books[index];
+          final chapter = index + 1;
 
-          return Card(
-            elevation: 4,
-            margin: const EdgeInsets.only(bottom: 12),
+          return InkWell(
+            borderRadius: BorderRadius.circular(18),
 
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-
-            child: ListTile(
-
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 18,
-                vertical: 8,
-              ),
-
-              leading: Container(
-                width: 45,
-                height: 45,
-
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Colors.deepPurple,
-                      Colors.purple,
-                    ],
-                  ),
-
-                  borderRadius: BorderRadius.circular(14),
-                ),
-
-                child: Center(
-                  child: Text(
-                    "${index + 1}",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EngBibleScreen(
+                    book: book,
+                    chapter: chapter,
                   ),
                 ),
-              ),
+              );
+            },
 
-              title: Text(
-                book["name"],
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 17,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+
+                gradient: const LinearGradient(
+                  colors: [
+                    Colors.deepPurple,
+                    Colors.purple,
+                  ],
+
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+
+                boxShadow: const [
+                  BoxShadow(
+                    blurRadius: 6,
+                    offset: Offset(0, 3),
+                  ),
+                ],
               ),
 
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 5),
-
+              child: Center(
                 child: Text(
-                  "${book["chapters"]} Chapters",
+                  "$chapter",
 
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-
-              trailing: Container(
-                padding: const EdgeInsets.all(8),
-
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-
-                child: const Icon(
-                  Icons.chevron_right,
-                  color: Colors.deepPurple,
-                ),
-              ),
-
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => EngChaptersScreen(
-                      book: book["name"],
-                      chapters: book["chapters"],
-                    ),
-                  ),
-                );
-              },
             ),
           );
         },
