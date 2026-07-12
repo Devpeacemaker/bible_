@@ -1,156 +1,253 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../providers/settings_provider.dart';
 import '../services/api_service.dart';
-import 'payment_screen.dart';
+import '../services/user_service.dart';
 
-class SubscriptionScreen extends StatefulWidget {
-  const SubscriptionScreen({super.key});
+import 'create_account_screen.dart';
+import 'subscription_screen.dart';
 
-  @override
-  State<SubscriptionScreen> createState() =>
-      _SubscriptionScreenState();
-}
+class VersionScreen extends StatelessWidget {
+  const VersionScreen({super.key});
 
-class _SubscriptionScreenState
-    extends State<SubscriptionScreen> {
-  int selectedPlan = 0;
+  Future<void> openPremium(
+    BuildContext context,
+    String feature,
+  ) async {
+    final hasAccount = await UserService.hasAccount();
 
-  bool loading = false;
+    if (!context.mounted) return;
 
-  final plans = [
-    {
-      "title": "2 Months",
-      "price": 40,
-      "months": 2,
-    },
-    {
-      "title": "6 Months",
-      "price": 350,
-      "months": 6,
-    },
-    {
-      "title": "1 Year",
-      "price": 500,
-      "months": 12,
-    },
-  ];
-
-  Future<void> continuePayment() async {
-    final plan = plans[selectedPlan];
-
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PaymentScreen(
-          title: plan["title"].toString(),
-          amount: plan["price"] as int,
-          months: plan["months"] as int,
+    if (!hasAccount) {
+      final created = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const CreateAccountScreen(),
         ),
+      );
+
+      if (created == true && context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const SubscriptionScreen(),
+          ),
+        );
+      }
+
+      return;
+    }
+
+    final user = await UserService.getUser();
+
+    if (user == null) return;
+
+    final premium = await ApiService.premium(user.phone);
+
+    if (!context.mounted) return;
+
+    if (!premium) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const SubscriptionScreen(),
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Premium Active"),
+        content: Text("Opening $feature..."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Continue"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget premiumCard(
+    BuildContext context,
+    SettingsProvider settings, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
+
+        leading: CircleAvatar(
+          radius: 28,
+          backgroundColor:
+              Theme.of(context).colorScheme.primaryContainer,
+          child: Icon(
+            icon,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: settings.fontSize - 1,
+          ),
+        ),
+
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: settings.fontSize - 3,
+            ),
+          ),
+        ),
+
+        trailing: const Icon(
+          Icons.lock,
+          color: Colors.orange,
+        ),
+
+        onTap: () {
+          openPremium(context, title);
+        },
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
+
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
       appBar: AppBar(
-        title: const Text("Choose Subscription"),
+        title: const Text("Premium"),
+        centerTitle: true,
       ),
-      body: Padding(
+
+      body: ListView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const Text(
-              "Select a Premium Plan",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(20),
             ),
-
-            const SizedBox(height: 25),
-
-            Expanded(
-              child: ListView.builder(
-                itemCount: plans.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    elevation: selectedPlan == index ? 6 : 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      side: BorderSide(
-                        color: selectedPlan == index
-                            ? Colors.purple
-                            : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                    child: RadioListTile<int>(
-                      value: index,
-                      groupValue: selectedPlan,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedPlan = value!;
-                        });
-                      },
-                      title: Text(
-                        plans[index]["title"].toString(),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      subtitle: Text(
-                        "KSh ${plans[index]["price"]}",
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton.icon(
-                icon: loading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.payment),
-                label: Text(
-                  loading
-                      ? "Please wait..."
-                      : "Continue to Payment",
-                  style: const TextStyle(fontSize: 18),
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.workspace_premium,
+                  color: Colors.amber,
+                  size: 70,
                 ),
-                onPressed: loading
-                    ? null
-                    : () async {
-                        setState(() {
-                          loading = true;
-                        });
 
-                        await continuePayment();
+                const SizedBox(height: 15),
 
-                        if (mounted) {
-                          setState(() {
-                            loading = false;
-                          });
-                        }
-                      },
+                Text(
+                  "Peace M Bible Premium",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: settings.fontSize + 7,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                Text(
+                  "Unlock premium Bible translations and powerful study features.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: settings.fontSize - 2,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 25),
+
+          premiumCard(
+            context,
+            settings,
+            icon: Icons.language,
+            title: "English Bible (ENG)",
+            subtitle: "Unlock the complete English Bible translation.",
+          ),
+
+          const SizedBox(height: 15),
+
+          premiumCard(
+            context,
+            settings,
+            icon: Icons.public,
+            title: "Kiswahili Bible (SWA)",
+            subtitle: "Soma Biblia kwa Kiswahili.",
+          ),
+
+          const SizedBox(height: 15),
+
+          premiumCard(
+            context,
+            settings,
+            icon: Icons.note_alt_outlined,
+            title: "Bible Notes",
+            subtitle: "Write and organize personal notes.",
+          ),
+
+          const SizedBox(height: 15),
+
+          premiumCard(
+            context,
+            settings,
+            icon: Icons.headphones,
+            title: "Audio Bible",
+            subtitle: "Listen to the Bible anytime, anywhere.",
+          ),
+
+          const SizedBox(height: 35),
+
+          SizedBox(
+            width: double.infinity,
+            height: 55,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                openPremium(
+                  context,
+                  "Peace M Bible Premium",
+                );
+              },
+              icon: const Icon(Icons.workspace_premium),
+              label: Text(
+                "Upgrade to Premium",
+                style: TextStyle(
+                  fontSize: settings.fontSize,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
+          ),
 
-            const SizedBox(height: 20),
-          ],
-        ),
+          const SizedBox(height: 30),
+        ],
       ),
     );
   }
