@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/settings_provider.dart';
 import '../services/api_service.dart';
+import '../services/bible_service.dart';
 import '../services/user_service.dart';
 
 import 'create_account_screen.dart';
@@ -35,7 +36,6 @@ class VersionScreen extends StatelessWidget {
           ),
         );
       }
-
       return;
     }
 
@@ -64,7 +64,25 @@ class VersionScreen extends StatelessWidget {
         content: Text("Opening $feature..."),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () async {
+              final settings = Provider.of<SettingsProvider>(
+                context,
+                listen: false,
+              );
+
+              if (feature.contains("English")) {
+                await settings.setBibleVersion("eng");
+                await BibleService.setVersion("eng");
+              } else if (feature.contains("Kiswahili")) {
+                await settings.setBibleVersion("swa");
+                await BibleService.setVersion("swa");
+              }
+
+              if (context.mounted) {
+                Navigator.pop(context); // Close dialog
+                Navigator.pop(context); // Return to previous screen
+              }
+            },
             child: const Text("Continue"),
           ),
         ],
@@ -86,7 +104,6 @@ class VersionScreen extends StatelessWidget {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
-
         leading: CircleAvatar(
           radius: 28,
           backgroundColor:
@@ -96,7 +113,6 @@ class VersionScreen extends StatelessWidget {
             color: Theme.of(context).colorScheme.primary,
           ),
         ),
-
         title: Text(
           title,
           style: TextStyle(
@@ -104,7 +120,6 @@ class VersionScreen extends StatelessWidget {
             fontSize: settings.fontSize - 1,
           ),
         ),
-
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 6),
           child: Text(
@@ -114,12 +129,10 @@ class VersionScreen extends StatelessWidget {
             ),
           ),
         ),
-
         trailing: const Icon(
           Icons.lock,
           color: Colors.orange,
         ),
-
         onTap: () {
           openPremium(context, title);
         },
@@ -132,13 +145,10 @@ class VersionScreen extends StatelessWidget {
     final settings = Provider.of<SettingsProvider>(context);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-
       appBar: AppBar(
         title: const Text("Premium"),
         centerTitle: true,
       ),
-
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -155,9 +165,7 @@ class VersionScreen extends StatelessWidget {
                   color: Colors.amber,
                   size: 70,
                 ),
-
                 const SizedBox(height: 15),
-
                 Text(
                   "Peace M Bible Premium",
                   textAlign: TextAlign.center,
@@ -167,16 +175,13 @@ class VersionScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
                 Text(
                   "Unlock premium Bible translations and powerful study features.",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: settings.fontSize - 2,
-                    height: 1.5,
                   ),
                 ),
               ],
@@ -245,8 +250,6 @@ class VersionScreen extends StatelessWidget {
               ),
             ),
           ),
-
-          const SizedBox(height: 30),
         ],
       ),
     );
