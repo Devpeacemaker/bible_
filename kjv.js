@@ -1,125 +1,121 @@
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
-class SettingsService {
-  // =========================
-  // THEME
-  // =========================
+import 'package:http/http.dart' as http;
 
-  static Future<void> saveThemeMode(ThemeMode mode) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("theme", mode.name);
+class ApiService {
+  // ==========================
+  // LIVE BACKEND
+  // ==========================
+
+  static const String baseUrl =
+      "https://peace-m-bible-backend.onrender.com";
+
+  // ==========================
+  // CREATE ACCOUNT
+  // ==========================
+
+  static Future<bool> register({
+    required String name,
+    required String email,
+    required String phone,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/register"),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "name": name,
+        "email": email,
+        "phone": phone,
+      }),
+    );
+
+    return response.statusCode == 200;
   }
 
-  static Future<ThemeMode> getThemeMode() async {
-    final prefs = await SharedPreferences.getInstance();
+  // ==========================
+  // START STK PUSH
+  // ==========================
 
-    switch (prefs.getString("theme")) {
-      case "light":
-        return ThemeMode.light;
-      case "dark":
-        return ThemeMode.dark;
-      default:
-        return ThemeMode.system;
-    }
+  static Future<Map<String, dynamic>> stkPush({
+    required String phone,
+    required int amount,
+    required String plan,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/stkpush"),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "phoneNumber": phone,
+        "amount": amount,
+        "accountReference": "Peace M Bible",
+        "transactionDesc": plan,
+      }),
+    );
+
+    return jsonDecode(response.body);
   }
 
-  // =========================
-  // FONT SIZE
-  // =========================
+  // ==========================
+  // PAYMENT STATUS
+  // ==========================
 
-  static Future<void> saveFontSize(double size) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble("fontSize", size);
+  static Future<Map<String, dynamic>> paymentStatus(
+      String checkoutId) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/status/$checkoutId"),
+    );
+
+    return jsonDecode(response.body);
   }
 
-  static Future<double> getFontSize() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble("fontSize") ?? 18;
+  // ==========================
+  // ACTIVATE PREMIUM
+  // ==========================
+
+  static Future<void> activatePremium({
+    required String phone,
+    required String plan,
+  }) async {
+    await http.post(
+      Uri.parse("$baseUrl/activate"),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "phone": phone,
+        "plan": plan,
+      }),
+    );
   }
 
-  // =========================
-  // DAILY VERSE
-  // =========================
+  // ==========================
+  // CHECK PREMIUM
+  // ==========================
 
-  static Future<void> saveDailyVerse(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("dailyVerse", value);
+  static Future<bool> premium(String phone) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/premium/$phone"),
+    );
+
+    final data = jsonDecode(response.body);
+
+    return data["premium"] == true;
   }
 
-  static Future<bool> getDailyVerse() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool("dailyVerse") ?? true;
-  }
+  // ==========================
+  // GET USER
+  // ==========================
 
-  // =========================
-  // READING SOUND
-  // =========================
+  static Future<Map<String, dynamic>> getUser(
+      String phone) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/user/$phone"),
+    );
 
-  static Future<void> saveSoundEnabled(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("soundEnabled", value);
-  }
-
-  static Future<bool> getSoundEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool("soundEnabled") ?? true;
-  }
-
-  // =========================
-  // KEEP SCREEN AWAKE
-  // =========================
-
-  static Future<void> saveKeepScreenOn(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("keepScreenOn", value);
-  }
-
-  static Future<bool> getKeepScreenOn() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool("keepScreenOn") ?? false;
-  }
-
-  // =========================
-  // DEFAULT BIBLE VERSION
-  // =========================
-
-  static Future<void> saveBibleVersion(String version) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("bibleVersion", version);
-  }
-
-  static Future<String> getBibleVersion() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString("bibleVersion") ?? "kjv";
-  }
-
-  // =========================
-  // HIGHLIGHT COLOR
-  // =========================
-
-  static Future<void> saveHighlightColor(Color color) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt("highlightColor", color.value);
-  }
-
-  static Future<Color> getHighlightColor() async {
-    final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getInt("highlightColor") ?? Colors.yellow.value;
-    return Color(value);
-  }
-
-  // =========================
-  // PREMIUM
-  // =========================
-
-  static Future<void> activatePremium() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("premium", true);
-  }
-
-  static Future<bool> isPremium() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool("premium") ?? false;
+    return jsonDecode(response.body);
   }
 }
