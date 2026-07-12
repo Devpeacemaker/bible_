@@ -1,149 +1,101 @@
 import 'package:flutter/material.dart';
 
-import 'reading_plan_detail_screen.dart';
+class ConcordanceScreen extends StatefulWidget {
+  const ConcordanceScreen({super.key});
 
-class ReadingPlanScreen extends StatelessWidget {
-  const ReadingPlanScreen({super.key});
+  @override
+  State<ConcordanceScreen> createState() =>
+      _ConcordanceScreenState();
+}
+
+class _ConcordanceScreenState
+    extends State<ConcordanceScreen> {
+  final controller = TextEditingController();
+
+  final List<Map<String, String>> verses = [
+    {
+      "word": "Faith",
+      "verse": "Hebrews 11:1",
+      "text":
+          "Now faith is the substance of things hoped for..."
+    },
+    {
+      "word": "Love",
+      "verse": "John 3:16",
+      "text":
+          "For God so loved the world..."
+    },
+    {
+      "word": "Prayer",
+      "verse": "Matthew 7:7",
+      "text":
+          "Ask, and it shall be given unto you..."
+    },
+    {
+      "word": "Hope",
+      "verse": "Romans 15:13",
+      "text":
+          "Now the God of hope fill you..."
+    },
+    {
+      "word": "Grace",
+      "verse": "Ephesians 2:8",
+      "text":
+          "For by grace are ye saved through faith..."
+    },
+  ];
+
+  String search = "";
 
   @override
   Widget build(BuildContext context) {
-
-    final plans = [
-      {
-        "title": "30 Days with Jesus",
-        "duration": "30 Days",
-        "days": 30,
-        "description":
-            "Read the life and teachings of Jesus.",
-      },
-      {
-        "title": "Read the New Testament",
-        "duration": "90 Days",
-        "days": 90,
-        "description":
-            "Complete the New Testament.",
-      },
-      {
-        "title": "Read the Bible in One Year",
-        "duration": "365 Days",
-        "days": 365,
-        "description":
-            "Read the entire Bible.",
-      },
-      {
-        "title": "Psalms & Proverbs",
-        "duration": "60 Days",
-        "days": 60,
-        "description":
-            "Daily wisdom and encouragement.",
-      },
-      {
-        "title": "Prayer & Faith",
-        "duration": "21 Days",
-        "days": 21,
-        "description":
-            "Grow your prayer life.",
-      },
-    ];
-
+    final results = verses.where((v) {
+      return v["word"]!
+          .toLowerCase()
+          .contains(search.toLowerCase());
+    }).toList();
 
     return Scaffold(
-
       appBar: AppBar(
-        title: const Text(
-          "Reading Plans",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
+        title: const Text("Concordance"),
       ),
-
-
-      body: ListView.builder(
-
-        padding: const EdgeInsets.all(12),
-
-        itemCount: plans.length,
-
-
-        itemBuilder: (context, index) {
-
-          final plan = plans[index];
-
-
-          return Card(
-
-            elevation: 3,
-
-            margin:
-                const EdgeInsets.only(bottom: 14),
-
-
-            child: ListTile(
-
-              contentPadding:
-                  const EdgeInsets.all(15),
-
-
-              leading: const CircleAvatar(
-                child:
-                    Icon(Icons.calendar_month),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(15),
+            child: TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: "Search a word...",
+                prefixIcon: Icon(Icons.search),
               ),
-
-
-              title: Text(
-                plan["title"] as String,
-
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-
-              subtitle: Text(
-                "${plan["duration"]}\n${plan["description"]}",
-              ),
-
-              isThreeLine: true,
-
-
-              trailing: ElevatedButton(
-
-                child: const Text("Start"),
-
-
-                onPressed: () {
-
-                  Navigator.push(
-
-                    context,
-
-                    MaterialPageRoute(
-
-                      builder: (_) =>
-                          ReadingPlanDetailScreen(
-
-                            title:
-                                plan["title"]
-                                    as String,
-
-                            days:
-                                plan["days"]
-                                    as int,
-
-                          ),
-
-                    ),
-
-                  );
-
-                },
-
-              ),
+              onChanged: (value) {
+                setState(() {
+                  search = value;
+                });
+              },
             ),
-          );
-        },
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: results.length,
+              itemBuilder: (_, i) {
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: ListTile(
+                    title: Text(results[i]["word"]!),
+                    subtitle: Text(
+                      "${results[i]["verse"]}\n\n${results[i]["text"]}",
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
