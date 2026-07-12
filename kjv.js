@@ -1,196 +1,136 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
-import '../services/api_service.dart';
+import '../models/user_model.dart';
 import '../services/user_service.dart';
 
-class PaymentStatusScreen extends StatefulWidget {
-  final String checkoutRequestId;
-  final String phone;
-  final String plan;
-  final int months;
-
-  const PaymentStatusScreen({
-    super.key,
-    required this.checkoutRequestId,
-    required this.phone,
-    required this.plan,
-    required this.months,
-  });
+class CreateAccountScreen extends StatefulWidget {
+  const CreateAccountScreen({super.key});
 
   @override
-  State<PaymentStatusScreen> createState() =>
-      _PaymentStatusScreenState();
+  State<CreateAccountScreen> createState() =>
+      _CreateAccountScreenState();
 }
 
-class _PaymentStatusScreenState
-    extends State<PaymentStatusScreen> {
-  Timer? timer;
+class _CreateAccountScreenState
+    extends State<CreateAccountScreen> {
+  final nameController = TextEditingController();
 
-  String status = "Waiting for M-PESA payment...";
+  final emailController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
+  final phoneController = TextEditingController();
 
-    timer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) => checkPayment(),
-    );
-  }
+  final passwordController = TextEditingController();
 
-  Future<void> checkPayment() async {
-    try {
-      final data = await ApiService.paymentStatus(
-        widget.checkoutRequestId,
+  bool loading = false;
+
+  Future<void> createAccount() async {
+    if (nameController.text.isEmpty ||
+        emailController.text.isEmpty ||
+        phoneController.text.isEmpty ||
+        passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please fill all fields."),
+        ),
       );
-
-      if (data["status"] == "completed") {
-        timer?.cancel();
-
-        // Activate premium on server
-        await ApiService.activatePremium(
-          phone: widget.phone,
-          plan: widget.plan,
-        );
-
-        // Activate premium locally
-        await UserService.activatePremium(
-          plan: widget.plan,
-          months: widget.months,
-        );
-
-        if (!mounted) return;
-
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => AlertDialog(
-            title: const Text("Payment Successful"),
-            content: Text(
-              "Your ${widget.plan} subscription has been activated successfully.",
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.popUntil(
-                    context,
-                    (route) => route.isFirst,
-                  );
-                },
-                child: const Text("Continue"),
-              ),
-            ],
-          ),
-        );
-
-        return;
-      }
-
-      if (data["status"] == "failed") {
-        timer?.cancel();
-
-        setState(() {
-          status = "Payment Failed";
-        });
-
-        return;
-      }
-
-      if (data["status"] == "cancelled") {
-        timer?.cancel();
-
-        setState(() {
-          status = "Payment Cancelled";
-        });
-
-        return;
-      }
-
-      setState(() {
-        status = "Waiting for M-PESA confirmation...";
-      });
-    } catch (e) {
-      setState(() {
-        status = "Checking payment...";
-      });
+      return;
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Processing Payment"),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(25),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(),
+    setState(() {
+      loading = true;
+    });
 
-              const SizedBox(height: 30),
+    final id =
+        "PMB${DateTime.now().millisecondsSinceEpoch}";
 
-              Text(
-                status,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+    final user = UserModel(
+      id: id,
+      fullName: nameController.text.trim(),
+      email: emailController.text.trim(),
+      phone: phoneController.text.trim(),
+      password: passwordController.text,
+    );
 
-              const SizedBox(height: 20),
+    await UserService.saveUser(user);
 
-              const Text(
-                "Complete the M-PESA prompt on your phone.\n"
-                "The payment status will be checked automatically every 5 seconds.",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey,
-                ),
-              ),
+    if (!mounted) return;
 
-              const SizedBox(height: 35),
+    setState(() {
+      loading = false;
+    });
 
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.refresh),
-                  label: const Text("Check Now"),
-                  onPressed: checkPayment,
-                ),
-              ),
+    Navigator.pop(context, true);
 
-              const SizedBox(height: 15),
-
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: TextButton.icon(
-                  icon: const Icon(Icons.close),
-                  label: const Text("Cancel"),
-                  onPressed: () {
-                    timer?.cancel();
-                    Navigator.pop(context);
-                  },
-                ),
-              ),
-            ],
-          ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Account created successfully.",
         ),
       ),
     );
   }
 
   @override
-  void dispose() {
-    timer?.cancel();
-    super.dispose();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Create Account"),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          TextField(
+            controller: nameController,
+            decoration: const InputDecoration(
+              labelText: "Full Name",
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
+          TextField(
+            controller: emailController,
+            decoration: const InputDecoration(
+              labelText: "Email",
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
+          TextField(
+            controller: phoneController,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              labelText: "Phone Number",
+              hintText: "2547XXXXXXXX",
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
+          TextField(
+            controller: passwordController,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: "Password",
+            ),
+          ),
+
+          const SizedBox(height: 30),
+
+          SizedBox(
+            height: 55,
+            child: ElevatedButton(
+              onPressed: loading ? null : createAccount,
+              child: loading
+                  ? const CircularProgressIndicator()
+                  : const Text(
+                      "Create Account",
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
