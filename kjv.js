@@ -1,135 +1,153 @@
-import 'dart:convert';
+const express = require("express");
+const axios = require("axios");
+const cors = require("cors");
+const db = require("./database");
 
-import 'package:http/http.dart' as http;
+const app = express();
 
-class ApiService {
-  static const String baseUrl =
-      "https://peace-m-bible-backend.onrender.com";
+app.use(cors());
+app.use(express.json());
 
-  // ==========================
-  // CREATE ACCOUNT
-  // ==========================
+const API_KEY =
+  "sk_ea6fa5e65d2dc2baf13d7bb6c013c3bac4fc02f9caff820579903cd19da07692";
 
-  static Future<bool> register({
-    required String name,
-    required String email,
-    required String phone,
-  }) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/register"),
-      headers: {
-        "Content-Type": "application/json",
+// ============================
+// CREATE ACCOUNT
+// ============================
+
+app.post("/register", (req, res) => {
+  const user = {
+    name: req.body.name,
+    email: req.body.email,
+    phone: req.body.phone,
+    premium: false,
+    expiry: null,
+  };
+
+  db.addUser(user);
+
+  res.json({
+    success: true,
+    message: "Account created successfully.",
+    user,
+  });
+});
+
+// ============================
+// GET USER
+// ============================
+
+app.get("/user/:phone", (req, res) => {
+  const user = db.getUser(req.params.phone);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found.",
+    });
+  }
+
+  res.json(user);
+});
+
+// ============================
+// STK PUSH
+// ============================
+
+app.post("/stkpush", async (req, res) => {
+  try {
+    const response = await axios.post(
+      "https://makamescopay.com/api/payments/stkpush",
+      {
+        phoneNumber: req.body.phoneNumber,
+        amount: req.body.amount,
+        accountReference: req.body.accountReference,
+        transactionDesc: req.body.transactionDesc,
       },
-      body: jsonEncode({
-        "name": name,
-        "email": email,
-        "phone": phone,
-      }),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": API_KEY,
+        },
+      }
     );
 
-    print("REGISTER: ${response.statusCode}");
-    print(response.body);
-
-    return response.statusCode == 200;
+    res.json(response.data);
+  } catch (e) {
+    res.status(500).json({
+      error: e.response?.data ?? e.message,
+    });
   }
+});
 
-  // ==========================
-  // STK PUSH
-  // ==========================
+// ============================
+// PAYMENT STATUS
+// ============================
 
-  static Future<Map<String, dynamic>> stkPush({
-    required String phone,
-    required int amount,
-    required String plan,
-  }) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/stkpush"),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "phoneNumber": phone,
-        "amount": amount,
-        "accountReference": "Peace M Bible",
-        "transactionDesc": plan,
-      }),
+app.get("/status/:id", async (req, res) => {
+  try {
+    const response = await axios.get(
+      `https://makamescopay.com/api/payments/status/${req.params.id}`,
+      {
+        headers: {
+          "X-API-Key": API_KEY,
+        },
+      }
     );
 
-    print("STK PUSH:");
-    print(response.body);
+    res.json(response.data);
+  } catch (e) {
+    res.status(500).json({
+      error: e.response?.data ?? e.message,
+    });
+  }
+});
 
-    return jsonDecode(response.body);
+// ============================
+// ACTIVATE PREMIUM
+// ============================
+
+app.post("/activate", (req, res) => {
+  const phone = req.body.phone;
+  const plan = req.body.plan;
+
+  let months = 2;
+
+  if (plan === "6 Months") {
+    months = 6;
   }
 
-  // ==========================
-  // PAYMENT STATUS
-  // ==========================
-
-  static Future<Map<String, dynamic>> paymentStatus(
-      String checkoutId) async {
-    final response = await http.get(
-      Uri.parse("$baseUrl/status/$checkoutId"),
-    );
-
-    print("PAYMENT STATUS:");
-    print(response.body);
-
-    return jsonDecode(response.body);
+  if (plan === "1 Year") {
+    months = 12;
   }
 
-  // ==========================
-  // ACTIVATE PREMIUM
-  // ==========================
+  const user = db.activatePremium(phone, months);
 
-  static Future<void> activatePremium({
-    required String phone,
-    required String plan,
-  }) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/activate"),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "phone": phone,
-        "plan": plan,
-      }),
-    );
-
-    print("ACTIVATE PREMIUM:");
-    print(response.body);
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found.",
+    });
   }
 
-  // ==========================
-  // CHECK PREMIUM
-  // ==========================
+  res.json({
+    success: true,
+    user,
+  });
+});
 
-  static Future<bool> premium(String phone) async {
-    final response = await http.get(
-      Uri.parse("$baseUrl/premium/$phone"),
-    );
+// ============================
+// CHECK PREMIUM
+// ============================
 
-    print("CHECK PREMIUM:");
-    print(response.body);
+app.get("/premium/:phone", (req, res) => {
+  const premium = db.premiumValid(req.params.phone);
 
-    final data = jsonDecode(response.body);
+  res.json({
+    premium,
+  });
+});
 
-    return data["premium"] == true;
-  }
-
-  // ==========================
-  // GET USER
-  // ==========================
-
-  static Future<Map<String, dynamic>> getUser(
-      String phone) async {
-    final response = await http.get(
-      Uri.parse("$baseUrl/user/$phone"),
-    );
-
-    print("GET USER:");
-    print(response.body);
-
-    return jsonDecode(response.body);
-  }
-}
+app.listen(3000, () => {
+  console.log("Peace M Bible backend running on port 3000");
+});
