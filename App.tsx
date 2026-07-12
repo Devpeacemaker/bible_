@@ -1,160 +1,176 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import '../services/notes_service.dart';
 
-import 'providers/settings_provider.dart';
+class AddNoteScreen extends StatefulWidget {
+  const AddNoteScreen({super.key});
 
-import 'services/notes_service.dart';
-import 'services/reading_plan_service.dart';
-
-import 'screens/main_navigation.dart';
-import 'screens/create_account_screen.dart';
-import 'screens/subscription_screen.dart';
-import 'screens/payment_screen.dart';
-import 'screens/payment_status_screen.dart';
-
-
-void main() async {
-
-  WidgetsFlutterBinding.ensureInitialized();
-
-
-  // Initialize Hive first
-  await Hive.initFlutter();
-
-
-  // Initialize local storage services
-  await ReadingPlanService.init();
-
-  await NotesService.init();
-
-
-  final settingsProvider = SettingsProvider();
-
-  await settingsProvider.load();
-
-
-  runApp(
-
-    ChangeNotifierProvider.value(
-
-      value: settingsProvider,
-
-      child: const PeaceMBibleApp(),
-
-    ),
-
-  );
+  @override
+  State<AddNoteScreen> createState() =>
+      _AddNoteScreenState();
 }
 
 
+class _AddNoteScreenState
+    extends State<AddNoteScreen> {
 
-class PeaceMBibleApp extends StatelessWidget {
+  final titleController =
+      TextEditingController();
 
-  const PeaceMBibleApp({super.key});
+  final noteController =
+      TextEditingController();
+
+
+  Future<void> saveNote() async {
+
+    if (titleController.text.isEmpty ||
+        noteController.text.isEmpty) {
+      return;
+    }
+
+
+    await NotesService.addNote(
+      title: titleController.text,
+      content: noteController.text,
+    );
+
+
+    if (mounted) {
+      Navigator.pop(context, true);
+    }
+
+  }
+
 
 
   @override
   Widget build(BuildContext context) {
 
-    final settings =
-        Provider.of<SettingsProvider>(context);
+    return Scaffold(
 
-
-    return MaterialApp(
-
-      debugShowCheckedModeBanner: false,
-
-      title: "Peace M Bible",
-
-
-      themeMode: settings.themeMode,
-
-
-      theme: ThemeData(
-
-        colorSchemeSeed: Colors.deepPurple,
-
-        useMaterial3: true,
-
-        brightness: Brightness.light,
-
+      appBar: AppBar(
+        title: const Text(
+          "New Bible Note",
+        ),
       ),
 
 
-      darkTheme: ThemeData(
+      body: Padding(
 
-        colorSchemeSeed: Colors.deepPurple,
+        padding:
+            const EdgeInsets.all(20),
 
-        useMaterial3: true,
 
-        brightness: Brightness.dark,
+        child: Column(
+
+          children: [
+
+            TextField(
+
+              controller:
+                  titleController,
+
+
+              decoration:
+                  const InputDecoration(
+
+                labelText:
+                    "Verse / Title",
+
+                border:
+                    OutlineInputBorder(),
+
+              ),
+
+            ),
+
+
+            const SizedBox(
+              height: 20,
+            ),
+
+
+
+            Expanded(
+
+              child: TextField(
+
+                controller:
+                    noteController,
+
+
+                expands:
+                    true,
+
+
+                maxLines:
+                    null,
+
+
+                textAlignVertical:
+                    TextAlignVertical.top,
+
+
+                decoration:
+                    const InputDecoration(
+
+                  hintText:
+                      "Write your Bible thoughts here...",
+
+                  border:
+                      OutlineInputBorder(),
+
+                ),
+
+              ),
+
+            ),
+
+
+            const SizedBox(
+              height: 20,
+            ),
+
+
+
+            SizedBox(
+
+              width:
+                  double.infinity,
+
+
+              height:
+                  55,
+
+
+              child:
+                  ElevatedButton.icon(
+
+                icon:
+                    const Icon(
+                      Icons.save,
+                    ),
+
+
+                label:
+                    const Text(
+                      "Save Note",
+                    ),
+
+
+                onPressed:
+                    saveNote,
+
+              ),
+
+            ),
+
+          ],
+
+        ),
 
       ),
-
-
-      routes: {
-
-        "/create-account": (_) =>
-            const CreateAccountScreen(),
-
-
-        "/subscription": (_) =>
-            const SubscriptionScreen(),
-
-
-        "/payment": (context) {
-
-          final plan =
-              ModalRoute.of(context)!
-                  .settings
-                  .arguments as Map;
-
-
-          return PaymentScreen(
-
-            title: plan["title"],
-
-            amount: plan["price"],
-
-            months: plan["months"],
-
-          );
-
-        },
-
-
-        "/payment-status": (context) {
-
-          final args =
-              ModalRoute.of(context)!
-                  .settings
-                  .arguments as Map;
-
-
-          return PaymentStatusScreen(
-
-            checkoutRequestId:
-                args["checkoutRequestId"],
-
-            phone:
-                args["phone"],
-
-            plan:
-                args["plan"],
-
-            months:
-                args["months"],
-
-          );
-
-        },
-
-      },
-
-
-      home: const MainNavigation(),
 
     );
+
   }
 }
