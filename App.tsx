@@ -1,58 +1,110 @@
 import 'package:flutter/material.dart';
-import '../services/settings_service.dart';
+import 'eng_chapters_screen.dart';
 
-class SettingsProvider extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.system;
-  double _fontSize = 18;
-  Color _highlightColor = Colors.yellow;
+class EngBooksScreen extends StatelessWidget {
+  EngBooksScreen({super.key});
 
-  String _selectedBible = "kjv";
-  bool _isPremium = false;
+  final List<Map<String, dynamic>> books = [
+    {"name": "Genesis", "chapters": 50},
+    {"name": "Exodus", "chapters": 40},
+    {"name": "Leviticus", "chapters": 27},
+    {"name": "Numbers", "chapters": 36},
+    {"name": "Deuteronomy", "chapters": 34},
+    {"name": "Joshua", "chapters": 24},
+    {"name": "Judges", "chapters": 21},
+    {"name": "Ruth", "chapters": 4},
+    {"name": "1 Samuel", "chapters": 31},
+    {"name": "2 Samuel", "chapters": 24},
+    {"name": "1 Kings", "chapters": 22},
+    {"name": "2 Kings", "chapters": 25},
+    {"name": "1 Chronicles", "chapters": 29},
+    {"name": "2 Chronicles", "chapters": 36},
+    {"name": "Ezra", "chapters": 10},
+    {"name": "Nehemiah", "chapters": 13},
+    {"name": "Esther", "chapters": 10},
+    {"name": "Job", "chapters": 42},
+    {"name": "Psalms", "chapters": 150},
+    {"name": "Proverbs", "chapters": 31},
+    {"name": "Ecclesiastes", "chapters": 12},
+    {"name": "Song of Solomon", "chapters": 8},
+    {"name": "Isaiah", "chapters": 66},
+    {"name": "Jeremiah", "chapters": 52},
+    {"name": "Lamentations", "chapters": 5},
+    {"name": "Ezekiel", "chapters": 48},
+    {"name": "Daniel", "chapters": 12},
+    {"name": "Hosea", "chapters": 14},
+    {"name": "Joel", "chapters": 3},
+    {"name": "Amos", "chapters": 9},
+    {"name": "Obadiah", "chapters": 1},
+    {"name": "Jonah", "chapters": 4},
+    {"name": "Micah", "chapters": 7},
+    {"name": "Nahum", "chapters": 3},
+    {"name": "Habakkuk", "chapters": 3},
+    {"name": "Zephaniah", "chapters": 3},
+    {"name": "Haggai", "chapters": 2},
+    {"name": "Zechariah", "chapters": 14},
+    {"name": "Malachi", "chapters": 4},
+    {"name": "Matthew", "chapters": 28},
+    {"name": "Mark", "chapters": 16},
+    {"name": "Luke", "chapters": 24},
+    {"name": "John", "chapters": 21},
+    {"name": "Acts", "chapters": 28},
+    {"name": "Romans", "chapters": 16},
+    {"name": "1 Corinthians", "chapters": 16},
+    {"name": "2 Corinthians", "chapters": 13},
+    {"name": "Galatians", "chapters": 6},
+    {"name": "Ephesians", "chapters": 6},
+    {"name": "Philippians", "chapters": 4},
+    {"name": "Colossians", "chapters": 4},
+    {"name": "1 Thessalonians", "chapters": 5},
+    {"name": "2 Thessalonians", "chapters": 3},
+    {"name": "1 Timothy", "chapters": 6},
+    {"name": "2 Timothy", "chapters": 4},
+    {"name": "Titus", "chapters": 3},
+    {"name": "Philemon", "chapters": 1},
+    {"name": "Hebrews", "chapters": 13},
+    {"name": "James", "chapters": 5},
+    {"name": "1 Peter", "chapters": 5},
+    {"name": "2 Peter", "chapters": 3},
+    {"name": "1 John", "chapters": 5},
+    {"name": "2 John", "chapters": 1},
+    {"name": "3 John", "chapters": 1},
+    {"name": "Jude", "chapters": 1},
+    {"name": "Revelation", "chapters": 22},
+  ];
 
-  ThemeMode get themeMode => _themeMode;
-  double get fontSize => _fontSize;
-  Color get highlightColor => _highlightColor;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("English Bible"),
+      ),
+      body: ListView.builder(
+        itemCount: books.length,
+        itemBuilder: (context, index) {
+          final book = books[index];
 
-  String get selectedBible => _selectedBible;
-  bool get isPremium => _isPremium;
-
-  Future<void> load() async {
-    _themeMode = await SettingsService.getThemeMode();
-    _fontSize = await SettingsService.getFontSize();
-    _highlightColor = await SettingsService.getHighlightColor();
-    _selectedBible = await SettingsService.getBibleVersion();
-    _isPremium = await SettingsService.isPremium();
-
-    notifyListeners();
-  }
-
-  Future<void> setTheme(ThemeMode mode) async {
-    _themeMode = mode;
-    await SettingsService.saveThemeMode(mode);
-    notifyListeners();
-  }
-
-  Future<void> setFontSize(double size) async {
-    _fontSize = size;
-    await SettingsService.saveFontSize(size);
-    notifyListeners();
-  }
-
-  Future<void> setHighlightColor(Color color) async {
-    _highlightColor = color;
-    await SettingsService.saveHighlightColor(color);
-    notifyListeners();
-  }
-
-  Future<void> setBibleVersion(String version) async {
-    _selectedBible = version;
-    await SettingsService.saveBibleVersion(version);
-    notifyListeners();
-  }
-
-  Future<void> activatePremium() async {
-    _isPremium = true;
-    await SettingsService.activatePremium();
-    notifyListeners();
+          return ListTile(
+            leading: CircleAvatar(
+              child: Text("${index + 1}"),
+            ),
+            title: Text(book["name"]),
+            subtitle: Text("${book["chapters"]} Chapters"),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EngChaptersScreen(
+                    book: book["name"],
+                    chapters: book["chapters"],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
   }
 }
