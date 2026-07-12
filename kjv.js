@@ -1,282 +1,156 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../data/bible_books.dart';
 import '../providers/settings_provider.dart';
-import '../services/api_service.dart';
-import '../services/user_service.dart';
 
-import 'chapter_screen.dart';
-import 'create_account_screen.dart';
-import 'subscription_screen.dart';
-
-class BooksScreen extends StatefulWidget {
-  const BooksScreen({super.key});
-
-  @override
-  State<BooksScreen> createState() => _BooksScreenState();
-}
-
-class _BooksScreenState extends State<BooksScreen> {
-  String search = "";
-
-  Future<bool> checkPremium() async {
-    final settings = Provider.of<SettingsProvider>(
-      context,
-      listen: false,
-    );
-
-    // KJV is always free
-    if (settings.selectedBible == "kjv") {
-      return true;
-    }
-
-    final hasAccount = await UserService.hasAccount();
-
-    if (!hasAccount) {
-      if (!mounted) return false;
-
-      final created = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const CreateAccountScreen(),
-        ),
-      );
-
-      if (created != true) {
-        return false;
-      }
-    }
-
-    final user = await UserService.getUser();
-
-    if (user == null) {
-      return false;
-    }
-
-    final premium = await ApiService.premium(
-      user.phone,
-    );
-
-    if (!premium) {
-      if (!mounted) return false;
-
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const SubscriptionScreen(),
-        ),
-      );
-
-      return false;
-    }
-
-    return true;
-  }
-
-  int getChapterCount(String book) {
-    const chapters = {
-      "Genesis": 50,
-      "Exodus": 40,
-      "Leviticus": 27,
-      "Numbers": 36,
-      "Deuteronomy": 34,
-      "Joshua": 24,
-      "Judges": 21,
-      "Ruth": 4,
-      "1 Samuel": 31,
-      "2 Samuel": 24,
-      "1 Kings": 22,
-      "2 Kings": 25,
-      "1 Chronicles": 29,
-      "2 Chronicles": 36,
-      "Ezra": 10,
-      "Nehemiah": 13,
-      "Esther": 10,
-      "Job": 42,
-      "Psalms": 150,
-      "Proverbs": 31,
-      "Ecclesiastes": 12,
-      "Song of Solomon": 8,
-      "Isaiah": 66,
-      "Jeremiah": 52,
-      "Lamentations": 5,
-      "Ezekiel": 48,
-      "Daniel": 12,
-      "Hosea": 14,
-      "Joel": 3,
-      "Amos": 9,
-      "Obadiah": 1,
-      "Jonah": 4,
-      "Micah": 7,
-      "Nahum": 3,
-      "Habakkuk": 3,
-      "Zephaniah": 3,
-      "Haggai": 2,
-      "Zechariah": 14,
-      "Malachi": 4,
-      "Matthew": 28,
-      "Mark": 16,
-      "Luke": 24,
-      "John": 21,
-      "Acts": 28,
-      "Romans": 16,
-      "1 Corinthians": 16,
-      "2 Corinthians": 13,
-      "Galatians": 6,
-      "Ephesians": 6,
-      "Philippians": 4,
-      "Colossians": 4,
-      "1 Thessalonians": 5,
-      "2 Thessalonians": 3,
-      "1 Timothy": 6,
-      "2 Timothy": 4,
-      "Titus": 3,
-      "Philemon": 1,
-      "Hebrews": 13,
-      "James": 5,
-      "1 Peter": 5,
-      "2 Peter": 3,
-      "1 John": 5,
-      "2 John": 1,
-      "3 John": 1,
-      "Jude": 1,
-      "Revelation": 22,
-    };
-
-    return chapters[book] ?? 1;
-  }
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final oldBooks = BibleBooks.oldTestament
-        .where(
-          (b) => b.toLowerCase().contains(
-                search.toLowerCase(),
-              ),
-        )
-        .toList();
-
-    final newBooks = BibleBooks.newTestament
-        .where(
-          (b) => b.toLowerCase().contains(
-                search.toLowerCase(),
-              ),
-        )
-        .toList();
+    final settings = Provider.of<SettingsProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Bible Books"),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
+        title: const Text("Settings"),
       ),
-      body: Column(
+
+      body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              decoration: const InputDecoration(
-                hintText: "Search Bible book...",
-                prefixIcon: Icon(Icons.search),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  search = value;
-                });
+
+          const Text(
+            "Appearance",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.light_mode),
+              title: const Text("Theme"),
+              subtitle: Text(settings.themeMode.name),
+
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  builder: (_) {
+                    return SafeArea(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+
+                          ListTile(
+                            leading: const Icon(Icons.phone_android),
+                            title: const Text("System"),
+                            onTap: () {
+                              settings.setThemeMode(ThemeMode.system);
+                              Navigator.pop(context);
+                            },
+                          ),
+
+                          ListTile(
+                            leading: const Icon(Icons.light_mode),
+                            title: const Text("Light"),
+                            onTap: () {
+                              settings.setThemeMode(ThemeMode.light);
+                              Navigator.pop(context);
+                            },
+                          ),
+
+                          ListTile(
+                            leading: const Icon(Icons.dark_mode),
+                            title: const Text("Dark"),
+                            onTap: () {
+                              settings.setThemeMode(ThemeMode.dark);
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
               },
             ),
           ),
-          Expanded(
-            child: ListView(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Text(
-                    "OLD TESTAMENT",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.purple,
-                    ),
-                  ),
-                ),
-                ...oldBooks.map((book) {
-                  final index =
-                      BibleBooks.oldTestament.indexOf(book);
 
-                  return ListTile(
-                    leading: const Icon(Icons.menu_book),
-                    title: Text(book),
-                    subtitle: Text(
-                      "${getChapterCount(book)} Chapters",
-                    ),
-                    onTap: () async {
-                      final allowed =
-                          await checkPremium();
+          const SizedBox(height: 20),
 
-                      if (!allowed) return;
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.format_size),
+              title: const Text("Bible Font Size"),
+              subtitle: Text("${settings.fontSize.toInt()}"),
+            ),
+          ),
 
-                      if (!mounted) return;
+          Slider(
+            value: settings.fontSize,
+            min: 14,
+            max: 30,
+            divisions: 16,
+            label: settings.fontSize.toInt().toString(),
+            onChanged: (value) {
+              settings.setFontSize(value);
+            },
+          ),
 
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ChapterScreen(
-                            book: book,
-                            totalChapters:
-                                getChapterCount(book),
-                            bookIndex: index,
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }),
-                const Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Text(
-                    "NEW TESTAMENT",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.purple,
-                    ),
-                  ),
-                ),
-                ...newBooks.map((book) {
-                  final index =
-                      39 +
-                          BibleBooks.newTestament
-                              .indexOf(book);
+          const SizedBox(height: 30),
 
-                  return ListTile(
-                    leading: const Icon(Icons.menu_book),
-                    title: Text(book),
-                    subtitle: Text(
-                      "${getChapterCount(book)} Chapters",
-                    ),
-                    onTap: () async {
-                      final allowed =
-                          await checkPremium();
+          const Divider(),
 
-                      if (!allowed) return;
+          SwitchListTile(
+            secondary: const Icon(Icons.notifications),
+            title: const Text("Daily Verse Notification"),
+            subtitle: const Text("Receive one verse every day"),
+            value: settings.dailyVerse,
+            onChanged: (value) {
+              settings.setDailyVerse(value);
+            },
+          ),
 
-                      if (!mounted) return;
+          SwitchListTile(
+            secondary: const Icon(Icons.volume_up),
+            title: const Text("Reading Sounds"),
+            subtitle: const Text("Play tap sounds"),
+            value: settings.soundEnabled,
+            onChanged: (value) {
+              settings.setSoundEnabled(value);
+            },
+          ),
 
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ChapterScreen(
-                            book: book,
-                            totalChapters:
-                                getChapterCount(book),
-                            bookIndex: index,
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }),
-              ],
+          SwitchListTile(
+            secondary: const Icon(Icons.screen_lock_portrait),
+            title: const Text("Keep Screen Awake"),
+            subtitle: const Text("While reading"),
+            value: settings.keepScreenOn,
+            onChanged: (value) {
+              settings.setKeepScreenOn(value);
+            },
+          ),
+
+          const SizedBox(height: 25),
+
+          const Text(
+            "About",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          const Card(
+            child: ListTile(
+              leading: Icon(Icons.menu_book),
+              title: Text("Peace M Bible"),
+              subtitle: Text("Version 1.0.0"),
             ),
           ),
         ],
