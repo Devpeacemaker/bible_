@@ -1,399 +1,118 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../providers/settings_provider.dart';
-import '../services/api_service.dart';
-import '../services/user_service.dart';
+class NotesScreen extends StatefulWidget {
+  const NotesScreen({super.key});
 
-import 'create_account_screen.dart';
-import 'subscription_screen.dart';
+  @override
+  State<NotesScreen> createState() => _NotesScreenState();
+}
 
-class VersionScreen extends StatelessWidget {
-  const VersionScreen({super.key});
+class _NotesScreenState extends State<NotesScreen> {
+  final List<Map<String, String>> notes = [];
 
-  Future<void> openPremium(
-    BuildContext context,
-    String feature,
-  ) async {
-    final hasAccount = await UserService.hasAccount();
+  void addNote() async {
+    final titleController = TextEditingController();
+    final noteController = TextEditingController();
 
-    if (!context.mounted) return;
-
-    if (!hasAccount) {
-      final created = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const CreateAccountScreen(),
-        ),
-      );
-
-      if (created == true && context.mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const SubscriptionScreen(),
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("New Bible Note"),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: "Verse (e.g. John 3:16)",
+                ),
+              ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: noteController,
+                maxLines: 6,
+                decoration: const InputDecoration(
+                  labelText: "Your Note",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
           ),
-        );
-      }
-
-      return;
-    }
-
-    final user = await UserService.getUser();
-
-    if (user == null) return;
-
-    final premium = await ApiService.premium(user.phone);
-
-    if (!context.mounted) return;
-
-    if (!premium) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const SubscriptionScreen(),
         ),
-      );
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Opening $feature..."),
+        actions: [
+          TextButton(
+            child: const Text("Cancel"),
+            onPressed: () => Navigator.pop(context, false),
+          ),
+          ElevatedButton(
+            child: const Text("Save"),
+            onPressed: () {
+              if (titleController.text.isNotEmpty &&
+                  noteController.text.isNotEmpty) {
+                notes.add({
+                  "title": titleController.text,
+                  "note": noteController.text,
+                });
+              }
+              Navigator.pop(context, true);
+            },
+          ),
+        ],
       ),
     );
 
-    // Navigation to each premium feature
-    switch (feature) {
-      case "English Bible (ENG)":
-        Navigator.pop(context, "eng");
-        break;
-
-      case "Kiswahili Bible (SWA)":
-        Navigator.pop(context, "swa");
-        break;
-
-      case "Audio Bible":
-        // TODO
-        break;
-
-      case "Bible Notes":
-        // TODO
-        break;
-
-      case "Bible Dictionary":
-        // TODO
-        break;
-
-      case "Concordance":
-        // TODO
-        break;
-
-      case "Cross References":
-        // TODO
-        break;
-
-      case "Reading Plans":
-        // TODO
-        break;
-
-      case "Daily Devotionals":
-        // TODO
-        break;
-
-      case "AI Bible Assistant":
-        // TODO
-        break;
+    if (result == true) {
+      setState(() {});
     }
   }
 
-  Widget premiumCard(
-    BuildContext context,
-    SettingsProvider settings, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(18),
-        leading: CircleAvatar(
-          radius: 28,
-          child: Icon(icon),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: settings.fontSize - 1,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: settings.fontSize - 4,
-            ),
-          ),
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 18,
-        ),
-        onTap: () => openPremium(context, title),
-      ),
-    );
-  }
-  Widget premiumCard(
-    BuildContext context,
-    SettingsProvider settings, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Card(
-      elevation: 3,
-      margin: const EdgeInsets.only(bottom: 15),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(
-          radius: 28,
-          backgroundColor:
-              Theme.of(context).colorScheme.primaryContainer,
-          child: Icon(
-            icon,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: settings.fontSize - 1,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: settings.fontSize - 3,
-            ),
-          ),
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 18,
-        ),
-        onTap: () {
-          openPremium(context, title);
-        },
-      ),
-    );
+  void deleteNote(int index) {
+    setState(() {
+      notes.removeAt(index);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context);
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Peace M Bible Premium"),
-        centerTitle: true,
+        title: const Text("Bible Notes"),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: const LinearGradient(
-                colors: [
-                  Colors.deepPurple,
-                  Colors.purple,
-                ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: addNote,
+        child: const Icon(Icons.add),
+      ),
+      body: notes.isEmpty
+          ? const Center(
+              child: Text(
+                "No notes yet.\nTap + to create your first Bible note.",
+                textAlign: TextAlign.center,
               ),
-            ),
-            child: Column(
-              children: [
-                const Icon(
-                  Icons.workspace_premium,
-                  size: 80,
-                  color: Colors.amber,
-                ),
-                const SizedBox(height: 15),
-                Text(
-                  "Peace M Bible Premium",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: settings.fontSize + 8,
-                    fontWeight: FontWeight.bold,
+            )
+          : ListView.builder(
+              itemCount: notes.length,
+              itemBuilder: (context, index) {
+                return Card(
+                  margin: const EdgeInsets.all(10),
+                  child: ListTile(
+                    title: Text(
+                      notes[index]["title"]!,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(notes[index]["note"]!),
+                    trailing: IconButton(
+                      icon: const Icon(
+                        Icons.delete,
+                        color: Colors.red,
+                      ),
+                      onPressed: () => deleteNote(index),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  "Unlock every premium feature for an amazing Bible study experience.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 25),
-
-          Text(
-            "Bible Versions",
-            style: TextStyle(
-              fontSize: settings.fontSize + 2,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          premiumCard(
-            context,
-            settings,
-            icon: Icons.language,
-            title: "English Bible (ENG)",
-            subtitle: "Premium English translation.",
-          ),
-
-          premiumCard(
-            context,
-            settings,
-            icon: Icons.public,
-            title: "Kiswahili Bible (SWA)",
-            subtitle: "Biblia Takatifu ya Kiswahili.",
-          ),
-
-          const SizedBox(height: 20),
-
-          Text(
-            "Study Tools",
-            style: TextStyle(
-              fontSize: settings.fontSize + 2,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 15),
-          premiumCard(
-            context,
-            settings,
-            icon: Icons.headphones,
-            title: "Audio Bible",
-            subtitle: "Listen to the Bible anytime.",
-          ),
-
-          premiumCard(
-            context,
-            settings,
-            icon: Icons.note_alt_outlined,
-            title: "Bible Notes",
-            subtitle: "Write and organize your personal notes.",
-          ),
-
-          premiumCard(
-            context,
-            settings,
-            icon: Icons.menu_book,
-            title: "Bible Dictionary",
-            subtitle: "Understand biblical words and meanings.",
-          ),
-
-          premiumCard(
-            context,
-            settings,
-            icon: Icons.search,
-            title: "Concordance",
-            subtitle: "Search words across the entire Bible.",
-          ),
-
-          premiumCard(
-            context,
-            settings,
-            icon: Icons.link,
-            title: "Cross References",
-            subtitle: "Discover related Bible verses.",
-          ),
-
-          const SizedBox(height: 20),
-
-          Text(
-            "Growth",
-            style: TextStyle(
-              fontSize: settings.fontSize + 2,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          premiumCard(
-            context,
-            settings,
-            icon: Icons.calendar_today,
-            title: "Reading Plans",
-            subtitle: "Follow guided Bible reading plans.",
-          ),
-
-          premiumCard(
-            context,
-            settings,
-            icon: Icons.wb_sunny,
-            title: "Daily Devotionals",
-            subtitle: "Read inspiring devotionals every day.",
-          ),
-
-          premiumCard(
-            context,
-            settings,
-            icon: Icons.smart_toy,
-            title: "AI Bible Assistant",
-            subtitle: "Ask Bible questions and receive instant answers.",
-          ),
-
-          const SizedBox(height: 30),
-
-          SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.workspace_premium),
-              label: const Text(
-                "Upgrade to Premium",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              onPressed: () {
-                openPremium(
-                  context,
-                  "Peace M Bible Premium",
                 );
               },
             ),
-          ),
-
-          const SizedBox(height: 30),
-        ],
-      ),
     );
   }
 }
