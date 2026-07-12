@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/user_model.dart';
+import '../services/api_service.dart';
 import '../services/user_service.dart';
 
 class CreateAccountScreen extends StatefulWidget {
@@ -40,34 +41,67 @@ class _CreateAccountScreenState
       loading = true;
     });
 
-    final id =
-        "PMB${DateTime.now().millisecondsSinceEpoch}";
+    try {
+      final success = await ApiService.register(
+        name: nameController.text.trim(),
+        email: emailController.text.trim(),
+        phone: phoneController.text.trim(),
+      );
 
-    final user = UserModel(
-      id: id,
-      fullName: nameController.text.trim(),
-      email: emailController.text.trim(),
-      phone: phoneController.text.trim(),
-      password: passwordController.text,
-    );
+      if (!success) {
+        throw Exception("Failed to create account on server.");
+      }
 
-    await UserService.saveUser(user);
+      final id =
+          "PMB${DateTime.now().millisecondsSinceEpoch}";
 
-    if (!mounted) return;
+      final user = UserModel(
+        id: id,
+        fullName: nameController.text.trim(),
+        email: emailController.text.trim(),
+        phone: phoneController.text.trim(),
+        password: passwordController.text,
+      );
 
-    setState(() {
-      loading = false;
-    });
+      await UserService.saveUser(user);
 
-    Navigator.pop(context, true);
+      if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          "Account created successfully.",
+      setState(() {
+        loading = false;
+      });
+
+      Navigator.pop(context, true);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Account created successfully.",
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        loading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -90,6 +124,7 @@ class _CreateAccountScreenState
 
           TextField(
             controller: emailController,
+            keyboardType: TextInputType.emailAddress,
             decoration: const InputDecoration(
               labelText: "Email",
             ),
