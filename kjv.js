@@ -1,118 +1,105 @@
 import 'package:flutter/material.dart';
 
-class NotesScreen extends StatefulWidget {
-  const NotesScreen({super.key});
+class DictionaryScreen extends StatefulWidget {
+  const DictionaryScreen({super.key});
 
   @override
-  State<NotesScreen> createState() => _NotesScreenState();
+  State<DictionaryScreen> createState() => _DictionaryScreenState();
 }
 
-class _NotesScreenState extends State<NotesScreen> {
-  final List<Map<String, String>> notes = [];
+class _DictionaryScreenState extends State<DictionaryScreen> {
+  final searchController = TextEditingController();
 
-  void addNote() async {
-    final titleController = TextEditingController();
-    final noteController = TextEditingController();
+  final List<Map<String, String>> words = [
+    {
+      "word": "Amen",
+      "meaning": "So be it; truly."
+    },
+    {
+      "word": "Grace",
+      "meaning": "God's undeserved favor."
+    },
+    {
+      "word": "Faith",
+      "meaning": "Complete trust in God."
+    },
+    {
+      "word": "Messiah",
+      "meaning": "The Anointed One, Jesus Christ."
+    },
+    {
+      "word": "Gospel",
+      "meaning": "The good news of Jesus Christ."
+    },
+    {
+      "word": "Disciple",
+      "meaning": "A follower of Jesus."
+    },
+    {
+      "word": "Covenant",
+      "meaning": "A sacred agreement between God and man."
+    },
+    {
+      "word": "Sabbath",
+      "meaning": "The holy day of rest."
+    },
+  ];
 
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("New Bible Note"),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: "Verse (e.g. John 3:16)",
-                ),
-              ),
-              const SizedBox(height: 15),
-              TextField(
-                controller: noteController,
-                maxLines: 6,
-                decoration: const InputDecoration(
-                  labelText: "Your Note",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            child: const Text("Cancel"),
-            onPressed: () => Navigator.pop(context, false),
-          ),
-          ElevatedButton(
-            child: const Text("Save"),
-            onPressed: () {
-              if (titleController.text.isNotEmpty &&
-                  noteController.text.isNotEmpty) {
-                notes.add({
-                  "title": titleController.text,
-                  "note": noteController.text,
-                });
-              }
-              Navigator.pop(context, true);
-            },
-          ),
-        ],
-      ),
-    );
-
-    if (result == true) {
-      setState(() {});
-    }
-  }
-
-  void deleteNote(int index) {
-    setState(() {
-      notes.removeAt(index);
-    });
-  }
+  String search = "";
 
   @override
   Widget build(BuildContext context) {
+    final filtered = words.where((e) {
+      return e["word"]!
+          .toLowerCase()
+          .contains(search.toLowerCase());
+    }).toList();
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Bible Notes"),
+        title: const Text("Bible Dictionary"),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: addNote,
-        child: const Icon(Icons.add),
-      ),
-      body: notes.isEmpty
-          ? const Center(
-              child: Text(
-                "No notes yet.\nTap + to create your first Bible note.",
-                textAlign: TextAlign.center,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(15),
+            child: TextField(
+              controller: searchController,
+              decoration: const InputDecoration(
+                hintText: "Search word...",
+                prefixIcon: Icon(Icons.search),
               ),
-            )
-          : ListView.builder(
-              itemCount: notes.length,
-              itemBuilder: (context, index) {
+              onChanged: (v) {
+                setState(() {
+                  search = v;
+                });
+              },
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: filtered.length,
+              itemBuilder: (_, i) {
                 return Card(
-                  margin: const EdgeInsets.all(10),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   child: ListTile(
                     title: Text(
-                      notes[index]["title"]!,
+                      filtered[i]["word"]!,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    subtitle: Text(notes[index]["note"]!),
-                    trailing: IconButton(
-                      icon: const Icon(
-                        Icons.delete,
-                        color: Colors.red,
-                      ),
-                      onPressed: () => deleteNote(index),
-                    ),
+                    subtitle: Text(filtered[i]["meaning"]!),
                   ),
                 );
               },
             ),
+          ),
+        ],
+      ),
     );
   }
 }
