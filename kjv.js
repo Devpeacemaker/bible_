@@ -143,23 +143,57 @@ class _BibleScreenState extends State<BibleScreen> {
     listen: false,
   );
 
-  // KJV → English
-  if (settings.selectedBible == "kjv") {
+  final current = settings.selectedBible;
+
+  // KJV -> English (Premium)
+  if (current == "kjv") {
+    final hasAccount = await UserService.hasAccount();
+
+    if (!hasAccount) {
+      if (!mounted) return;
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const CreateAccountScreen(),
+        ),
+      );
+      return;
+    }
+
+    final user = await UserService.getUser();
+
+    if (user == null) return;
+
+    final premium = await ApiService.premium(user.phone);
+
+    if (!premium) {
+      if (!mounted) return;
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const SubscriptionScreen(),
+        ),
+      );
+      return;
+    }
+
     await settings.setBibleVersion("eng");
     await BibleService.setVersion("eng");
     await loadChapter();
     return;
   }
 
-  // English → Swahili
-  if (settings.selectedBible == "eng") {
+  // English -> Swahili (Premium)
+  if (current == "eng") {
     await settings.setBibleVersion("swa");
     await BibleService.setVersion("swa");
     await loadChapter();
     return;
   }
 
-  // Swahili → KJV
+  // Swahili -> KJV (Free)
   await settings.setBibleVersion("kjv");
   await BibleService.setVersion("kjv");
   await loadChapter();
