@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../providers/settings_provider.dart';
 import '../services/api_service.dart';
-import '../services/bible_service.dart';
 import '../services/user_service.dart';
 
 import 'create_account_screen.dart';
@@ -36,6 +35,7 @@ class VersionScreen extends StatelessWidget {
           ),
         );
       }
+
       return;
     }
 
@@ -57,37 +57,54 @@ class VersionScreen extends StatelessWidget {
       return;
     }
 
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Premium Active"),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
         content: Text("Opening $feature..."),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              final settings = Provider.of<SettingsProvider>(
-                context,
-                listen: false,
-              );
-
-              if (feature.contains("English")) {
-                await settings.setBibleVersion("eng");
-                await BibleService.setVersion("eng");
-              } else if (feature.contains("Kiswahili")) {
-                await settings.setBibleVersion("swa");
-                await BibleService.setVersion("swa");
-              }
-
-              if (context.mounted) {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(context); // Return to previous screen
-              }
-            },
-            child: const Text("Continue"),
-          ),
-        ],
       ),
     );
+
+    // Navigation to each premium feature
+    switch (feature) {
+      case "English Bible (ENG)":
+        Navigator.pop(context, "eng");
+        break;
+
+      case "Kiswahili Bible (SWA)":
+        Navigator.pop(context, "swa");
+        break;
+
+      case "Audio Bible":
+        // TODO
+        break;
+
+      case "Bible Notes":
+        // TODO
+        break;
+
+      case "Bible Dictionary":
+        // TODO
+        break;
+
+      case "Concordance":
+        // TODO
+        break;
+
+      case "Cross References":
+        // TODO
+        break;
+
+      case "Reading Plans":
+        // TODO
+        break;
+
+      case "Daily Devotionals":
+        // TODO
+        break;
+
+      case "AI Bible Assistant":
+        // TODO
+        break;
+    }
   }
 
   Widget premiumCard(
@@ -98,7 +115,50 @@ class VersionScreen extends StatelessWidget {
     required String subtitle,
   }) {
     return Card(
-      elevation: 2,
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(18),
+        leading: CircleAvatar(
+          radius: 28,
+          child: Icon(icon),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: settings.fontSize - 1,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: settings.fontSize - 4,
+            ),
+          ),
+        ),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          size: 18,
+        ),
+        onTap: () => openPremium(context, title),
+      ),
+    );
+  }
+  Widget premiumCard(
+    BuildContext context,
+    SettingsProvider settings, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Card(
+      elevation: 3,
+      margin: const EdgeInsets.only(bottom: 15),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
       ),
@@ -130,8 +190,8 @@ class VersionScreen extends StatelessWidget {
           ),
         ),
         trailing: const Icon(
-          Icons.lock,
-          color: Colors.orange,
+          Icons.arrow_forward_ios,
+          size: 18,
         ),
         onTap: () {
           openPremium(context, title);
@@ -146,7 +206,7 @@ class VersionScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Premium"),
+        title: const Text("Peace M Bible Premium"),
         centerTitle: true,
       ),
       body: ListView(
@@ -155,15 +215,20 @@ class VersionScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
               borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                colors: [
+                  Colors.deepPurple,
+                  Colors.purple,
+                ],
+              ),
             ),
             child: Column(
               children: [
                 const Icon(
                   Icons.workspace_premium,
+                  size: 80,
                   color: Colors.amber,
-                  size: 70,
                 ),
                 const SizedBox(height: 15),
                 Text(
@@ -171,17 +236,17 @@ class VersionScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: settings.fontSize + 7,
+                    fontSize: settings.fontSize + 8,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 10),
-                Text(
-                  "Unlock premium Bible translations and powerful study features.",
+                const Text(
+                  "Unlock every premium feature for an amazing Bible study experience.",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white70,
-                    fontSize: settings.fontSize - 2,
+                    height: 1.5,
                   ),
                 ),
               ],
@@ -190,32 +255,91 @@ class VersionScreen extends StatelessWidget {
 
           const SizedBox(height: 25),
 
+          Text(
+            "Bible Versions",
+            style: TextStyle(
+              fontSize: settings.fontSize + 2,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
           premiumCard(
             context,
             settings,
             icon: Icons.language,
             title: "English Bible (ENG)",
-            subtitle: "Unlock the complete English Bible translation.",
+            subtitle: "Premium English translation.",
           ),
-
-          const SizedBox(height: 15),
 
           premiumCard(
             context,
             settings,
             icon: Icons.public,
             title: "Kiswahili Bible (SWA)",
-            subtitle: "Soma Biblia kwa Kiswahili.",
+            subtitle: "Biblia Takatifu ya Kiswahili.",
+          ),
+
+          const SizedBox(height: 20),
+
+          Text(
+            "Study Tools",
+            style: TextStyle(
+              fontSize: settings.fontSize + 2,
+              fontWeight: FontWeight.bold,
+            ),
           ),
 
           const SizedBox(height: 15),
+          premiumCard(
+            context,
+            settings,
+            icon: Icons.headphones,
+            title: "Audio Bible",
+            subtitle: "Listen to the Bible anytime.",
+          ),
 
           premiumCard(
             context,
             settings,
             icon: Icons.note_alt_outlined,
             title: "Bible Notes",
-            subtitle: "Write and organize personal notes.",
+            subtitle: "Write and organize your personal notes.",
+          ),
+
+          premiumCard(
+            context,
+            settings,
+            icon: Icons.menu_book,
+            title: "Bible Dictionary",
+            subtitle: "Understand biblical words and meanings.",
+          ),
+
+          premiumCard(
+            context,
+            settings,
+            icon: Icons.search,
+            title: "Concordance",
+            subtitle: "Search words across the entire Bible.",
+          ),
+
+          premiumCard(
+            context,
+            settings,
+            icon: Icons.link,
+            title: "Cross References",
+            subtitle: "Discover related Bible verses.",
+          ),
+
+          const SizedBox(height: 20),
+
+          Text(
+            "Growth",
+            style: TextStyle(
+              fontSize: settings.fontSize + 2,
+              fontWeight: FontWeight.bold,
+            ),
           ),
 
           const SizedBox(height: 15),
@@ -223,33 +347,51 @@ class VersionScreen extends StatelessWidget {
           premiumCard(
             context,
             settings,
-            icon: Icons.headphones,
-            title: "Audio Bible",
-            subtitle: "Listen to the Bible anytime, anywhere.",
+            icon: Icons.calendar_today,
+            title: "Reading Plans",
+            subtitle: "Follow guided Bible reading plans.",
           ),
 
-          const SizedBox(height: 35),
+          premiumCard(
+            context,
+            settings,
+            icon: Icons.wb_sunny,
+            title: "Daily Devotionals",
+            subtitle: "Read inspiring devotionals every day.",
+          ),
+
+          premiumCard(
+            context,
+            settings,
+            icon: Icons.smart_toy,
+            title: "AI Bible Assistant",
+            subtitle: "Ask Bible questions and receive instant answers.",
+          ),
+
+          const SizedBox(height: 30),
 
           SizedBox(
             width: double.infinity,
             height: 55,
             child: ElevatedButton.icon(
+              icon: const Icon(Icons.workspace_premium),
+              label: const Text(
+                "Upgrade to Premium",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
               onPressed: () {
                 openPremium(
                   context,
                   "Peace M Bible Premium",
                 );
               },
-              icon: const Icon(Icons.workspace_premium),
-              label: Text(
-                "Upgrade to Premium",
-                style: TextStyle(
-                  fontSize: settings.fontSize,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ),
           ),
+
+          const SizedBox(height: 30),
         ],
       ),
     );
