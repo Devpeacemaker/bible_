@@ -3,10 +3,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  // ==========================
-  // LIVE BACKEND
-  // ==========================
-
   static const String baseUrl =
       "https://peace-m-bible-backend.onrender.com";
 
@@ -31,11 +27,14 @@ class ApiService {
       }),
     );
 
+    print("REGISTER: ${response.statusCode}");
+    print(response.body);
+
     return response.statusCode == 200;
   }
 
   // ==========================
-  // START STK PUSH
+  // STK PUSH
   // ==========================
 
   static Future<Map<String, dynamic>> stkPush({
@@ -56,6 +55,9 @@ class ApiService {
       }),
     );
 
+    print("STK PUSH:");
+    print(response.body);
+
     return jsonDecode(response.body);
   }
 
@@ -69,6 +71,9 @@ class ApiService {
       Uri.parse("$baseUrl/status/$checkoutId"),
     );
 
+    print("PAYMENT STATUS:");
+    print(response.body);
+
     return jsonDecode(response.body);
   }
 
@@ -80,7 +85,7 @@ class ApiService {
     required String phone,
     required String plan,
   }) async {
-    await http.post(
+    final response = await http.post(
       Uri.parse("$baseUrl/activate"),
       headers: {
         "Content-Type": "application/json",
@@ -90,6 +95,9 @@ class ApiService {
         "plan": plan,
       }),
     );
+
+    print("ACTIVATE PREMIUM:");
+    print(response.body);
   }
 
   // ==========================
@@ -100,6 +108,9 @@ class ApiService {
     final response = await http.get(
       Uri.parse("$baseUrl/premium/$phone"),
     );
+
+    print("CHECK PREMIUM:");
+    print(response.body);
 
     final data = jsonDecode(response.body);
 
@@ -115,6 +126,9 @@ class ApiService {
     final response = await http.get(
       Uri.parse("$baseUrl/user/$phone"),
     );
+
+    print("GET USER:");
+    print(response.body);
 
     return jsonDecode(response.body);
   }
