@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/settings_provider.dart';
+import 'services/notes_service.dart';
 
 import 'screens/main_navigation.dart';
 import 'screens/create_account_screen.dart';
@@ -11,6 +12,8 @@ import 'screens/payment_status_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await NotesService.init();
 
   final settingsProvider = SettingsProvider();
   await settingsProvider.load();
