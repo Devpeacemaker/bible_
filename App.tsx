@@ -1,79 +1,37 @@
-import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-class ReadingPlanScreen extends StatelessWidget {
-  const ReadingPlanScreen({super.key});
+class ReadingPlanService {
+  static const String boxName = "reading_progress";
 
-  @override
-  Widget build(BuildContext context) {
-    final plans = [
-      {
-        "title": "30 Days with Jesus",
-        "duration": "30 Days",
-        "description": "Read the life and teachings of Jesus."
-      },
-      {
-        "title": "Read the New Testament",
-        "duration": "90 Days",
-        "description": "Complete the New Testament."
-      },
-      {
-        "title": "Read the Bible in One Year",
-        "duration": "365 Days",
-        "description": "Read the entire Bible."
-      },
-      {
-        "title": "Psalms & Proverbs",
-        "duration": "60 Days",
-        "description": "Daily wisdom and encouragement."
-      },
-      {
-        "title": "Prayer & Faith",
-        "duration": "21 Days",
-        "description": "Grow your prayer life."
-      },
-    ];
+  static Future<void> init() async {
+    if (!Hive.isBoxOpen(boxName)) {
+      await Hive.openBox(boxName);
+    }
+  }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Reading Plans"),
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: plans.length,
-        itemBuilder: (context, index) {
-          final plan = plans[index];
+  static Box get box => Hive.box(boxName);
 
-          return Card(
-            child: ListTile(
-              leading: const CircleAvatar(
-                child: Icon(Icons.calendar_month),
-              ),
-              title: Text(
-                plan["title"]!,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              subtitle: Text(
-                "${plan["duration"]}\n${plan["description"]}",
-              ),
-              isThreeLine: true,
-              trailing: ElevatedButton(
-                child: const Text("Start"),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        "${plan["title"]} started.",
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          );
-        },
-      ),
-    );
+  static bool isCompleted(String plan, int day) {
+    return box.get("${plan}_$day", defaultValue: false);
+  }
+
+  static Future<void> setCompleted(
+      String plan,
+      int day,
+      bool completed,
+      ) async {
+    await box.put("${plan}_$day", completed);
+  }
+
+  static int completedCount(String plan, int totalDays) {
+    int count = 0;
+
+    for (int i = 1; i <= totalDays; i++) {
+      if (isCompleted(plan, i)) {
+        count++;
+      }
+    }
+
+    return count;
   }
 }
