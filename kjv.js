@@ -1,47 +1,49 @@
 import 'package:flutter/material.dart';
 
-class ConcordanceScreen extends StatefulWidget {
-  const ConcordanceScreen({super.key});
+class CrossReferenceScreen extends StatefulWidget {
+  const CrossReferenceScreen({super.key});
 
   @override
-  State<ConcordanceScreen> createState() =>
-      _ConcordanceScreenState();
+  State<CrossReferenceScreen> createState() =>
+      _CrossReferenceScreenState();
 }
 
-class _ConcordanceScreenState
-    extends State<ConcordanceScreen> {
+class _CrossReferenceScreenState
+    extends State<CrossReferenceScreen> {
   final controller = TextEditingController();
 
-  final List<Map<String, String>> verses = [
+  final references = [
     {
-      "word": "Faith",
-      "verse": "Hebrews 11:1",
-      "text":
-          "Now faith is the substance of things hoped for..."
-    },
-    {
-      "word": "Love",
       "verse": "John 3:16",
-      "text":
-          "For God so loved the world..."
+      "related": [
+        "Romans 5:8",
+        "1 John 4:9",
+        "Ephesians 2:4-5"
+      ]
     },
     {
-      "word": "Prayer",
-      "verse": "Matthew 7:7",
-      "text":
-          "Ask, and it shall be given unto you..."
+      "verse": "Genesis 1:1",
+      "related": [
+        "John 1:1",
+        "Hebrews 11:3",
+        "Psalm 33:6"
+      ]
     },
     {
-      "word": "Hope",
-      "verse": "Romans 15:13",
-      "text":
-          "Now the God of hope fill you..."
+      "verse": "Psalm 23:1",
+      "related": [
+        "John 10:11",
+        "Ezekiel 34:11",
+        "Isaiah 40:11"
+      ]
     },
     {
-      "word": "Grace",
-      "verse": "Ephesians 2:8",
-      "text":
-          "For by grace are ye saved through faith..."
+      "verse": "Matthew 5:14",
+      "related": [
+        "John 8:12",
+        "Philippians 2:15",
+        "Isaiah 60:1"
+      ]
     },
   ];
 
@@ -49,15 +51,16 @@ class _ConcordanceScreenState
 
   @override
   Widget build(BuildContext context) {
-    final results = verses.where((v) {
-      return v["word"]!
+    final filtered = references.where((r) {
+      return r["verse"]
+          .toString()
           .toLowerCase()
           .contains(search.toLowerCase());
     }).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Concordance"),
+        title: const Text("Cross References"),
       ),
       body: Column(
         children: [
@@ -66,7 +69,7 @@ class _ConcordanceScreenState
             child: TextField(
               controller: controller,
               decoration: const InputDecoration(
-                hintText: "Search a word...",
+                hintText: "Search verse...",
                 prefixIcon: Icon(Icons.search),
               ),
               onChanged: (value) {
@@ -78,18 +81,27 @@ class _ConcordanceScreenState
           ),
           Expanded(
             child: ListView.builder(
-              itemCount: results.length,
-              itemBuilder: (_, i) {
+              itemCount: filtered.length,
+              itemBuilder: (_, index) {
+                final refs =
+                    filtered[index]["related"] as List<String>;
+
                 return Card(
                   margin: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
                   ),
-                  child: ListTile(
-                    title: Text(results[i]["word"]!),
-                    subtitle: Text(
-                      "${results[i]["verse"]}\n\n${results[i]["text"]}",
-                    ),
+                  child: ExpansionTile(
+                    leading: const Icon(Icons.link),
+                    title: Text(filtered[index]["verse"].toString()),
+                    children: refs
+                        .map(
+                          (e) => ListTile(
+                            leading: const Icon(Icons.menu_book),
+                            title: Text(e),
+                          ),
+                        )
+                        .toList(),
                   ),
                 );
               },
