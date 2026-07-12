@@ -1,158 +1,149 @@
 import 'package:flutter/material.dart';
 
-import '../services/reading_plan_service.dart';
+import 'reading_plan_detail_screen.dart';
 
-class ReadingPlanDetailScreen extends StatefulWidget {
-  final String title;
-  final int days;
-
-  const ReadingPlanDetailScreen({
-    super.key,
-    required this.title,
-    required this.days,
-  });
-
-  @override
-  State<ReadingPlanDetailScreen> createState() =>
-      _ReadingPlanDetailScreenState();
-}
-
-class _ReadingPlanDetailScreenState
-    extends State<ReadingPlanDetailScreen> {
-
-
-  void toggleDay(int day, bool value) async {
-    await ReadingPlanService.setCompleted(
-      widget.title,
-      day,
-      value,
-    );
-
-    setState(() {});
-  }
-
+class ReadingPlanScreen extends StatelessWidget {
+  const ReadingPlanScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
 
-    final completed =
-        ReadingPlanService.completedCount(
-          widget.title,
-          widget.days,
-        );
-
-
-    final progress =
-        completed / widget.days;
+    final plans = [
+      {
+        "title": "30 Days with Jesus",
+        "duration": "30 Days",
+        "days": 30,
+        "description":
+            "Read the life and teachings of Jesus.",
+      },
+      {
+        "title": "Read the New Testament",
+        "duration": "90 Days",
+        "days": 90,
+        "description":
+            "Complete the New Testament.",
+      },
+      {
+        "title": "Read the Bible in One Year",
+        "duration": "365 Days",
+        "days": 365,
+        "description":
+            "Read the entire Bible.",
+      },
+      {
+        "title": "Psalms & Proverbs",
+        "duration": "60 Days",
+        "days": 60,
+        "description":
+            "Daily wisdom and encouragement.",
+      },
+      {
+        "title": "Prayer & Faith",
+        "duration": "21 Days",
+        "days": 21,
+        "description":
+            "Grow your prayer life.",
+      },
+    ];
 
 
     return Scaffold(
 
       appBar: AppBar(
-        title: Text(widget.title),
+        title: const Text(
+          "Reading Plans",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
       ),
 
 
-      body: Column(
-        children: [
+      body: ListView.builder(
 
-          Padding(
-            padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
 
-            child: Card(
-              elevation: 3,
-
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-
-                child: Column(
-                  children: [
-
-                    Text(
-                      "Progress: $completed / ${widget.days} Days",
-
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
+        itemCount: plans.length,
 
 
-                    const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+
+          final plan = plans[index];
 
 
-                    LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 10,
-                      borderRadius:
-                          BorderRadius.circular(10),
-                    ),
-                  ],
+          return Card(
+
+            elevation: 3,
+
+            margin:
+                const EdgeInsets.only(bottom: 14),
+
+
+            child: ListTile(
+
+              contentPadding:
+                  const EdgeInsets.all(15),
+
+
+              leading: const CircleAvatar(
+                child:
+                    Icon(Icons.calendar_month),
+              ),
+
+
+              title: Text(
+                plan["title"] as String,
+
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-          ),
 
 
+              subtitle: Text(
+                "${plan["duration"]}\n${plan["description"]}",
+              ),
 
-          Expanded(
-
-            child: ListView.builder(
-
-              padding:
-                  const EdgeInsets.all(12),
-
-              itemCount: widget.days,
+              isThreeLine: true,
 
 
-              itemBuilder: (context, index) {
+              trailing: ElevatedButton(
 
-                final day = index + 1;
-
-
-                final completed =
-                    ReadingPlanService.isCompleted(
-                      widget.title,
-                      day,
-                    );
+                child: const Text("Start"),
 
 
-                return Card(
+                onPressed: () {
 
-                  child: CheckboxListTile(
+                  Navigator.push(
 
-                    value: completed,
+                    context,
 
+                    MaterialPageRoute(
 
-                    onChanged: (value) {
+                      builder: (_) =>
+                          ReadingPlanDetailScreen(
 
-                      toggleDay(
-                        day,
-                        value ?? false,
-                      );
+                            title:
+                                plan["title"]
+                                    as String,
 
-                    },
+                            days:
+                                plan["days"]
+                                    as int,
 
+                          ),
 
-                    title: Text(
-                      "Day $day",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
                     ),
 
+                  );
 
-                    subtitle: Text(
-                      "Bible reading for day $day",
-                    ),
+                },
 
-                  ),
-                );
-              },
+              ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
