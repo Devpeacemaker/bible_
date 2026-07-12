@@ -1,50 +1,95 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class ReadingPlanService {
-  static const String boxName = "reading_progress";
+import 'providers/settings_provider.dart';
+import 'services/notes_service.dart';
+import 'services/reading_plan_service.dart';
 
-  static Future<void> init() async {
-    if (!Hive.isAdapterRegistered(0)) {
-      await Hive.initFlutter();
-    }
+import 'screens/main_navigation.dart';
+import 'screens/create_account_screen.dart';
+import 'screens/subscription_screen.dart';
+import 'screens/payment_screen.dart';
+import 'screens/payment_status_screen.dart';
 
-    if (!Hive.isBoxOpen(boxName)) {
-      await Hive.openBox(boxName);
-    }
-  }
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ReadingPlanService.init();
 
-  static Box get box => Hive.box(boxName);
+  await NotesService.init();
 
-  static bool isCompleted(String plan, int day) {
-    return box.get(
-      "${plan}_$day",
-      defaultValue: false,
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.load();
+
+  runApp(
+    ChangeNotifierProvider.value(
+      value: settingsProvider,
+      child: const PeaceMBibleApp(),
+    ),
+  );
+}
+
+class PeaceMBibleApp extends StatelessWidget {
+  const PeaceMBibleApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: "Peace M Bible",
+
+      themeMode: settings.themeMode,
+
+      theme: ThemeData(
+        colorSchemeSeed: Colors.deepPurple,
+        useMaterial3: true,
+        brightness: Brightness.light,
+      ),
+
+      darkTheme: ThemeData(
+        colorSchemeSeed: Colors.deepPurple,
+        useMaterial3: true,
+        brightness: Brightness.dark,
+      ),
+
+      routes: {
+        "/create-account": (_) =>
+            const CreateAccountScreen(),
+
+        "/subscription": (_) =>
+            const SubscriptionScreen(),
+
+        "/payment": (context) {
+          final plan =
+              ModalRoute.of(context)!
+                  .settings
+                  .arguments as Map;
+
+          return PaymentScreen(
+            title: plan["title"],
+            amount: plan["price"],
+            months: plan["months"],
+          );
+        },
+
+        "/payment-status": (context) {
+          final args =
+              ModalRoute.of(context)!
+                  .settings
+                  .arguments as Map;
+
+          return PaymentStatusScreen(
+            checkoutRequestId:
+                args["checkoutRequestId"],
+            phone: args["phone"],
+            plan: args["plan"],
+            months: args["months"],
+          );
+        },
+      },
+
+      home: const MainNavigation(),
     );
-  }
-
-  static Future<void> setCompleted(
-    String plan,
-    int day,
-    bool completed,
-  ) async {
-    await box.put(
-      "${plan}_$day",
-      completed,
-    );
-  }
-
-  static int completedCount(
-    String plan,
-    int totalDays,
-  ) {
-    int count = 0;
-
-    for (int i = 1; i <= totalDays; i++) {
-      if (isCompleted(plan, i)) {
-        count++;
-      }
-    }
-
-    return count;
   }
 }
