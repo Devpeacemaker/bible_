@@ -1,89 +1,125 @@
 import 'package:flutter/material.dart';
-import '../services/settings_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class SettingsProvider extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.system;
-  double _fontSize = 18;
+class SettingsService {
+  // =========================
+  // THEME
+  // =========================
 
-  bool _dailyVerse = true;
-  bool _soundEnabled = true;
-  bool _keepScreenOn = false;
-
-  Color _highlightColor = Colors.yellow;
-  String _selectedBible = "kjv";
-  bool _isPremium = false;
-
-  ThemeMode get themeMode => _themeMode;
-  double get fontSize => _fontSize;
-
-  bool get dailyVerse => _dailyVerse;
-  bool get soundEnabled => _soundEnabled;
-  bool get keepScreenOn => _keepScreenOn;
-
-  Color get highlightColor => _highlightColor;
-  String get selectedBible => _selectedBible;
-  bool get isPremium => _isPremium;
-
-  Future<void> load() async {
-    _themeMode = await SettingsService.getThemeMode();
-    _fontSize = await SettingsService.getFontSize();
-
-    _dailyVerse = await SettingsService.getDailyVerse();
-    _soundEnabled = await SettingsService.getSoundEnabled();
-    _keepScreenOn = await SettingsService.getKeepScreenOn();
-
-    _highlightColor = await SettingsService.getHighlightColor();
-    _selectedBible = await SettingsService.getBibleVersion();
-    _isPremium = await SettingsService.isPremium();
-
-    notifyListeners();
+  static Future<void> saveThemeMode(ThemeMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("theme", mode.name);
   }
 
-  Future<void> setThemeMode(ThemeMode mode) async {
-    _themeMode = mode;
-    await SettingsService.saveThemeMode(mode);
-    notifyListeners();
+  static Future<ThemeMode> getThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    switch (prefs.getString("theme")) {
+      case "light":
+        return ThemeMode.light;
+      case "dark":
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
+    }
   }
 
-  Future<void> setFontSize(double size) async {
-    _fontSize = size;
-    await SettingsService.saveFontSize(size);
-    notifyListeners();
+  // =========================
+  // FONT SIZE
+  // =========================
+
+  static Future<void> saveFontSize(double size) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble("fontSize", size);
   }
 
-  Future<void> setDailyVerse(bool value) async {
-    _dailyVerse = value;
-    await SettingsService.saveDailyVerse(value);
-    notifyListeners();
+  static Future<double> getFontSize() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble("fontSize") ?? 18;
   }
 
-  Future<void> setSoundEnabled(bool value) async {
-    _soundEnabled = value;
-    await SettingsService.saveSoundEnabled(value);
-    notifyListeners();
+  // =========================
+  // DAILY VERSE
+  // =========================
+
+  static Future<void> saveDailyVerse(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("dailyVerse", value);
   }
 
-  Future<void> setKeepScreenOn(bool value) async {
-    _keepScreenOn = value;
-    await SettingsService.saveKeepScreenOn(value);
-    notifyListeners();
+  static Future<bool> getDailyVerse() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool("dailyVerse") ?? true;
   }
 
-  Future<void> setHighlightColor(Color color) async {
-    _highlightColor = color;
-    await SettingsService.saveHighlightColor(color);
-    notifyListeners();
+  // =========================
+  // READING SOUND
+  // =========================
+
+  static Future<void> saveSoundEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("soundEnabled", value);
   }
 
-  Future<void> setBibleVersion(String version) async {
-    _selectedBible = version;
-    await SettingsService.saveBibleVersion(version);
-    notifyListeners();
+  static Future<bool> getSoundEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool("soundEnabled") ?? true;
   }
 
-  Future<void> activatePremium() async {
-    _isPremium = true;
-    await SettingsService.activatePremium();
-    notifyListeners();
+  // =========================
+  // KEEP SCREEN AWAKE
+  // =========================
+
+  static Future<void> saveKeepScreenOn(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("keepScreenOn", value);
+  }
+
+  static Future<bool> getKeepScreenOn() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool("keepScreenOn") ?? false;
+  }
+
+  // =========================
+  // DEFAULT BIBLE VERSION
+  // =========================
+
+  static Future<void> saveBibleVersion(String version) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("bibleVersion", version);
+  }
+
+  static Future<String> getBibleVersion() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString("bibleVersion") ?? "kjv";
+  }
+
+  // =========================
+  // HIGHLIGHT COLOR
+  // =========================
+
+  static Future<void> saveHighlightColor(Color color) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt("highlightColor", color.value);
+  }
+
+  static Future<Color> getHighlightColor() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = prefs.getInt("highlightColor") ?? Colors.yellow.value;
+    return Color(value);
+  }
+
+  // =========================
+  // PREMIUM
+  // =========================
+
+  static Future<void> activatePremium() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("premium", true);
+  }
+
+  static Future<bool> isPremium() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool("premium") ?? false;
   }
 }
