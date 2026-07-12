@@ -1,170 +1,156 @@
 import 'package:flutter/material.dart';
 
-import '../models/user_model.dart';
 import '../services/api_service.dart';
-import '../services/user_service.dart';
+import 'payment_screen.dart';
 
-class CreateAccountScreen extends StatefulWidget {
-  const CreateAccountScreen({super.key});
+class SubscriptionScreen extends StatefulWidget {
+  const SubscriptionScreen({super.key});
 
   @override
-  State<CreateAccountScreen> createState() =>
-      _CreateAccountScreenState();
+  State<SubscriptionScreen> createState() =>
+      _SubscriptionScreenState();
 }
 
-class _CreateAccountScreenState
-    extends State<CreateAccountScreen> {
-  final nameController = TextEditingController();
-
-  final emailController = TextEditingController();
-
-  final phoneController = TextEditingController();
-
-  final passwordController = TextEditingController();
+class _SubscriptionScreenState
+    extends State<SubscriptionScreen> {
+  int selectedPlan = 0;
 
   bool loading = false;
 
-  Future<void> createAccount() async {
-    if (nameController.text.isEmpty ||
-        emailController.text.isEmpty ||
-        phoneController.text.isEmpty ||
-        passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please fill all fields."),
+  final plans = [
+    {
+      "title": "2 Months",
+      "price": 40,
+      "months": 2,
+    },
+    {
+      "title": "6 Months",
+      "price": 350,
+      "months": 6,
+    },
+    {
+      "title": "1 Year",
+      "price": 500,
+      "months": 12,
+    },
+  ];
+
+  Future<void> continuePayment() async {
+    final plan = plans[selectedPlan];
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentScreen(
+          title: plan["title"].toString(),
+          amount: plan["price"] as int,
+          months: plan["months"] as int,
         ),
-      );
-      return;
-    }
-
-    setState(() {
-      loading = true;
-    });
-
-    try {
-      final success = await ApiService.register(
-        name: nameController.text.trim(),
-        email: emailController.text.trim(),
-        phone: phoneController.text.trim(),
-      );
-
-      if (!success) {
-        throw Exception("Failed to create account on server.");
-      }
-
-      final id =
-          "PMB${DateTime.now().millisecondsSinceEpoch}";
-
-      final user = UserModel(
-        id: id,
-        fullName: nameController.text.trim(),
-        email: emailController.text.trim(),
-        phone: phoneController.text.trim(),
-        password: passwordController.text,
-      );
-
-      await UserService.saveUser(user);
-
-      if (!mounted) return;
-
-      setState(() {
-        loading = false;
-      });
-
-      Navigator.pop(context, true);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Account created successfully.",
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        loading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    nameController.dispose();
-    emailController.dispose();
-    phoneController.dispose();
-    passwordController.dispose();
-    super.dispose();
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Create Account"),
+        title: const Text("Choose Subscription"),
       ),
-      body: ListView(
+      body: Padding(
         padding: const EdgeInsets.all(20),
-        children: [
-          TextField(
-            controller: nameController,
-            decoration: const InputDecoration(
-              labelText: "Full Name",
+        child: Column(
+          children: [
+            const Text(
+              "Select a Premium Plan",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
 
-          const SizedBox(height: 15),
+            const SizedBox(height: 25),
 
-          TextField(
-            controller: emailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: "Email",
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          TextField(
-            controller: phoneController,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: "Phone Number",
-              hintText: "2547XXXXXXXX",
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          TextField(
-            controller: passwordController,
-            obscureText: true,
-            decoration: const InputDecoration(
-              labelText: "Password",
-            ),
-          ),
-
-          const SizedBox(height: 30),
-
-          SizedBox(
-            height: 55,
-            child: ElevatedButton(
-              onPressed: loading ? null : createAccount,
-              child: loading
-                  ? const CircularProgressIndicator()
-                  : const Text(
-                      "Create Account",
+            Expanded(
+              child: ListView.builder(
+                itemCount: plans.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                    elevation: selectedPlan == index ? 6 : 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      side: BorderSide(
+                        color: selectedPlan == index
+                            ? Colors.purple
+                            : Colors.transparent,
+                        width: 2,
+                      ),
                     ),
+                    child: RadioListTile<int>(
+                      value: index,
+                      groupValue: selectedPlan,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedPlan = value!;
+                        });
+                      },
+                      title: Text(
+                        plans[index]["title"].toString(),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        "KSh ${plans[index]["price"]}",
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 20),
+
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton.icon(
+                icon: loading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.payment),
+                label: Text(
+                  loading
+                      ? "Please wait..."
+                      : "Continue to Payment",
+                  style: const TextStyle(fontSize: 18),
+                ),
+                onPressed: loading
+                    ? null
+                    : () async {
+                        setState(() {
+                          loading = true;
+                        });
+
+                        await continuePayment();
+
+                        if (mounted) {
+                          setState(() {
+                            loading = false;
+                          });
+                        }
+                      },
+              ),
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
