@@ -1,93 +1,118 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import 'providers/settings_provider.dart';
-import 'services/notes_service.dart';
+class NotesScreen extends StatefulWidget {
+  const NotesScreen({super.key});
 
-import 'screens/main_navigation.dart';
-import 'screens/create_account_screen.dart';
-import 'screens/subscription_screen.dart';
-import 'screens/payment_screen.dart';
-import 'screens/payment_status_screen.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  await NotesService.init();
-
-  final settingsProvider = SettingsProvider();
-  await settingsProvider.load();
-
-  runApp(
-    ChangeNotifierProvider.value(
-      value: settingsProvider,
-      child: const PeaceMBibleApp(),
-    ),
-  );
+  @override
+  State<NotesScreen> createState() => _NotesScreenState();
 }
 
-class PeaceMBibleApp extends StatelessWidget {
-  const PeaceMBibleApp({super.key});
+class _NotesScreenState extends State<NotesScreen> {
+  final List<Map<String, String>> notes = [];
+
+  void addNote() async {
+    final titleController = TextEditingController();
+    final noteController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("New Bible Note"),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: "Verse (e.g. John 3:16)",
+                ),
+              ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: noteController,
+                maxLines: 6,
+                decoration: const InputDecoration(
+                  labelText: "Your Note",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text("Cancel"),
+            onPressed: () => Navigator.pop(context, false),
+          ),
+          ElevatedButton(
+            child: const Text("Save"),
+            onPressed: () {
+              if (titleController.text.isNotEmpty &&
+                  noteController.text.isNotEmpty) {
+                notes.add({
+                  "title": titleController.text,
+                  "note": noteController.text,
+                });
+              }
+              Navigator.pop(context, true);
+            },
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      setState(() {});
+    }
+  }
+
+  void deleteNote(int index) {
+    setState(() {
+      notes.removeAt(index);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context);
-
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: "Peace M Bible",
-
-      themeMode: settings.themeMode,
-
-      theme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-        brightness: Brightness.light,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Bible Notes"),
       ),
-
-      darkTheme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-        brightness: Brightness.dark,
+      floatingActionButton: FloatingActionButton(
+        onPressed: addNote,
+        child: const Icon(Icons.add),
       ),
-
-      routes: {
-        "/create-account": (_) =>
-            const CreateAccountScreen(),
-
-        "/subscription": (_) =>
-            const SubscriptionScreen(),
-
-        "/payment": (context) {
-          final plan =
-              ModalRoute.of(context)!
-                  .settings
-                  .arguments as Map;
-
-          return PaymentScreen(
-            title: plan["title"],
-            amount: plan["price"],
-            months: plan["months"],
-          );
-        },
-
-        "/payment-status": (context) {
-          final args =
-              ModalRoute.of(context)!
-                  .settings
-                  .arguments as Map;
-
-          return PaymentStatusScreen(
-            checkoutRequestId:
-                args["checkoutRequestId"],
-            phone: args["phone"],
-            plan: args["plan"],
-            months: args["months"],
-          );
-        },
-      },
-
-      home: const MainNavigation(),
+      body: notes.isEmpty
+          ? const Center(
+              child: Text(
+                "No notes yet.\nTap + to create your first Bible note.",
+                textAlign: TextAlign.center,
+              ),
+            )
+          : ListView.builder(
+              itemCount: notes.length,
+              itemBuilder: (context, index) {
+                return Card(
+                  margin: const EdgeInsets.all(10),
+                  child: ListTile(
+                    title: Text(
+                      notes[index]["title"]!,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(notes[index]["note"]!),
+                    trailing: IconButton(
+                      icon: const Icon(
+                        Icons.delete,
+                        color: Colors.red,
+                      ),
+                      onPressed: () => deleteNote(index),
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }
