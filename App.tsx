@@ -1,98 +1,34 @@
-@override
-Widget build(BuildContext context) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
+import 'package:hive_flutter/hive_flutter.dart';
 
-  return Scaffold(
-    appBar: AppBar(
-      title: Text(
-        reference.isEmpty
-            ? "${widget.book} ${widget.chapter}"
-            : reference,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      centerTitle: true,
-      backgroundColor: Colors.deepPurple,
-    ),
+class NotesService {
+  static const String boxName = "bible_notes";
 
-    body: loading
-        ? const Center(
-            child: CircularProgressIndicator(),
-          )
+  static Future<void> init() async {
+    await Hive.initFlutter();
+    await Hive.openBox(boxName);
+  }
 
-        : Container(
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.black
-                  : const Color(0xfff7f5ff),
-            ),
+  static Box get box => Hive.box(boxName);
 
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
 
-              itemCount: verses.length,
+  static Future<void> addNote({
+    required String title,
+    required String content,
+  }) async {
+    await box.add({
+      "title": title,
+      "content": content,
+      "date": DateTime.now().toString(),
+    });
+  }
 
-              itemBuilder: (context, index) {
-                final verse = verses[index];
 
-                return Card(
-                  elevation: 2,
+  static List getNotes() {
+    return box.values.toList();
+  }
 
-                  margin: const EdgeInsets.only(
-                    bottom: 14,
-                  ),
 
-                  color: isDark
-                      ? const Color(0xff1e1e1e)
-                      : Colors.white,
-
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(16),
-                  ),
-
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-
-                    child: RichText(
-                      text: TextSpan(
-                        style: TextStyle(
-                          color: isDark
-                              ? Colors.white
-                              : Colors.black87,
-
-                          fontSize: 18,
-
-                          height: 1.7,
-                        ),
-
-                        children: [
-
-                          TextSpan(
-                            text:
-                                "${verse["verse"]} ",
-
-                            style: const TextStyle(
-                              fontWeight:
-                                  FontWeight.bold,
-
-                              color:
-                                  Colors.deepPurple,
-                            ),
-                          ),
-
-                          TextSpan(
-                            text:
-                                verse["text"],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-  );
+  static Future<void> deleteNote(int index) async {
+    await box.deleteAt(index);
+  }
 }
