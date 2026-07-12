@@ -1,176 +1,59 @@
-import 'package:flutter/material.dart';
-import '../services/notes_service.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-class AddNoteScreen extends StatefulWidget {
-  const AddNoteScreen({super.key});
+class NotesService {
 
-  @override
-  State<AddNoteScreen> createState() =>
-      _AddNoteScreenState();
-}
+  static const String boxName = "bible_notes";
 
 
-class _AddNoteScreenState
-    extends State<AddNoteScreen> {
+  static Future<void> init() async {
 
-  final titleController =
-      TextEditingController();
-
-  final noteController =
-      TextEditingController();
-
-
-  Future<void> saveNote() async {
-
-    if (titleController.text.isEmpty ||
-        noteController.text.isEmpty) {
-      return;
-    }
-
-
-    await NotesService.addNote(
-      title: titleController.text,
-      content: noteController.text,
-    );
-
-
-    if (mounted) {
-      Navigator.pop(context, true);
+    if (!Hive.isBoxOpen(boxName)) {
+      await Hive.openBox(boxName);
     }
 
   }
 
 
 
-  @override
-  Widget build(BuildContext context) {
-
-    return Scaffold(
-
-      appBar: AppBar(
-        title: const Text(
-          "New Bible Note",
-        ),
-      ),
-
-
-      body: Padding(
-
-        padding:
-            const EdgeInsets.all(20),
-
-
-        child: Column(
-
-          children: [
-
-            TextField(
-
-              controller:
-                  titleController,
-
-
-              decoration:
-                  const InputDecoration(
-
-                labelText:
-                    "Verse / Title",
-
-                border:
-                    OutlineInputBorder(),
-
-              ),
-
-            ),
-
-
-            const SizedBox(
-              height: 20,
-            ),
+  static Box get box => Hive.box(boxName);
 
 
 
-            Expanded(
+  static Future<void> addNote({
+    required String title,
+    required String content,
+  }) async {
 
-              child: TextField(
+    await box.add({
 
-                controller:
-                    noteController,
+      "title": title,
 
+      "content": content,
 
-                expands:
-                    true,
+      "date": DateTime.now()
+          .toString(),
 
-
-                maxLines:
-                    null,
-
-
-                textAlignVertical:
-                    TextAlignVertical.top,
-
-
-                decoration:
-                    const InputDecoration(
-
-                  hintText:
-                      "Write your Bible thoughts here...",
-
-                  border:
-                      OutlineInputBorder(),
-
-                ),
-
-              ),
-
-            ),
-
-
-            const SizedBox(
-              height: 20,
-            ),
-
-
-
-            SizedBox(
-
-              width:
-                  double.infinity,
-
-
-              height:
-                  55,
-
-
-              child:
-                  ElevatedButton.icon(
-
-                icon:
-                    const Icon(
-                      Icons.save,
-                    ),
-
-
-                label:
-                    const Text(
-                      "Save Note",
-                    ),
-
-
-                onPressed:
-                    saveNote,
-
-              ),
-
-            ),
-
-          ],
-
-        ),
-
-      ),
-
-    );
+    });
 
   }
+
+
+
+  static List getNotes() {
+
+    return box.values
+        .toList();
+
+  }
+
+
+
+  static Future<void> deleteNote(
+      int index,
+      ) async {
+
+    await box.deleteAt(index);
+
+  }
+
 }
