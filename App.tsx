@@ -1,34 +1,90 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class NotesService {
-  static const String boxName = "bible_notes";
+import 'providers/settings_provider.dart';
 
-  static Future<void> init() async {
-    await Hive.initFlutter();
-    await Hive.openBox(boxName);
-  }
+import 'screens/main_navigation.dart';
+import 'screens/create_account_screen.dart';
+import 'screens/subscription_screen.dart';
+import 'screens/payment_screen.dart';
+import 'screens/payment_status_screen.dart';
 
-  static Box get box => Hive.box(boxName);
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.load();
 
-  static Future<void> addNote({
-    required String title,
-    required String content,
-  }) async {
-    await box.add({
-      "title": title,
-      "content": content,
-      "date": DateTime.now().toString(),
-    });
-  }
+  runApp(
+    ChangeNotifierProvider.value(
+      value: settingsProvider,
+      child: const PeaceMBibleApp(),
+    ),
+  );
+}
 
+class PeaceMBibleApp extends StatelessWidget {
+  const PeaceMBibleApp({super.key});
 
-  static List getNotes() {
-    return box.values.toList();
-  }
+  @override
+  Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
 
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: "Peace M Bible",
 
-  static Future<void> deleteNote(int index) async {
-    await box.deleteAt(index);
+      themeMode: settings.themeMode,
+
+      theme: ThemeData(
+        colorSchemeSeed: Colors.deepPurple,
+        useMaterial3: true,
+        brightness: Brightness.light,
+      ),
+
+      darkTheme: ThemeData(
+        colorSchemeSeed: Colors.deepPurple,
+        useMaterial3: true,
+        brightness: Brightness.dark,
+      ),
+
+      routes: {
+        "/create-account": (_) =>
+            const CreateAccountScreen(),
+
+        "/subscription": (_) =>
+            const SubscriptionScreen(),
+
+        "/payment": (context) {
+          final plan =
+              ModalRoute.of(context)!
+                  .settings
+                  .arguments as Map;
+
+          return PaymentScreen(
+            title: plan["title"],
+            amount: plan["price"],
+            months: plan["months"],
+          );
+        },
+
+        "/payment-status": (context) {
+          final args =
+              ModalRoute.of(context)!
+                  .settings
+                  .arguments as Map;
+
+          return PaymentStatusScreen(
+            checkoutRequestId:
+                args["checkoutRequestId"],
+            phone: args["phone"],
+            plan: args["plan"],
+            months: args["months"],
+          );
+        },
+      },
+
+      home: const MainNavigation(),
+    );
   }
 }
