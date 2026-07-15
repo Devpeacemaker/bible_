@@ -1,257 +1,207 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
-import '../services/audio_service.dart';
-import 'audio_player_screen.dart';
-
-
-class AudioChaptersScreen extends StatefulWidget {
-
-  final String bibleId;
-  final String bookId;
-  final String book;
+import '../constants/api_constants.dart';
 
 
-  const AudioChaptersScreen({
-
-    super.key,
-
-    required this.bibleId,
-
-    required this.bookId,
-
-    required this.book,
-
-  });
+class AudioService {
 
 
-  @override
-  State<AudioChaptersScreen> createState() =>
-      _AudioChaptersScreenState();
+  // Get available Audio Bibles
+  static Future<List<dynamic>> getAudioBibles() async {
 
-}
+    final response = await http.get(
 
+      Uri.parse(
+        "${ApiConstants.baseUrl}/audio-bibles",
+      ),
 
+      headers: {
 
-class _AudioChaptersScreenState
-    extends State<AudioChaptersScreen> {
+        "api-key":
+            ApiConstants.apiKey,
 
+      },
 
-  bool loading = true;
-
-
-  List<dynamic> chapters = [];
-
-
-
-  @override
-  void initState(){
-
-    super.initState();
-
-    loadChapters();
-
-  }
+    );
 
 
+    if (response.statusCode == 200) {
 
-  Future<void> loadChapters() async {
+      final data =
+          jsonDecode(response.body);
 
-    try {
-
-
-      final result =
-          await AudioService.getBookChapters(
-
-        bibleId:
-            widget.bibleId,
-
-        bookId:
-            widget.bookId,
-
-      );
-
-
-
-      setState((){
-
-        chapters = result;
-
-        loading = false;
-
-      });
-
-
-
-    }catch(e){
-
-
-      setState((){
-
-        loading = false;
-
-      });
-
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-
-        SnackBar(
-          content:
-              Text(e.toString()),
-        ),
-
-      );
+      return data["data"];
 
     }
 
+
+    throw Exception(
+      "Unable to load audio Bibles",
+    );
+
   }
 
 
 
-  @override
-  Widget build(BuildContext context){
+
+  // Get books inside selected Audio Bible
+  static Future<List<dynamic>> getBooks({
+
+    required String bibleId,
+
+  }) async {
 
 
-    return Scaffold(
+    final response = await http.get(
 
-      appBar: AppBar(
+      Uri.parse(
 
-        title:
-            Text(widget.book),
-
-        centerTitle:true,
+        "${ApiConstants.baseUrl}/audio-bibles/"
+        "$bibleId/books",
 
       ),
 
 
+      headers: {
 
-      body: loading
+        "api-key":
+            ApiConstants.apiKey,
 
-
-          ? const Center(
-
-              child:
-                  CircularProgressIndicator(),
-
-            )
-
-
-          : GridView.builder(
-
-              padding:
-                  const EdgeInsets.all(16),
-
-
-              itemCount:
-                  chapters.length,
-
-
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-
-                crossAxisCount:4,
-
-                crossAxisSpacing:12,
-
-                mainAxisSpacing:12,
-
-              ),
-
-
-
-              itemBuilder:(context,index){
-
-
-                final chapter =
-                    chapters[index];
-
-
-
-                return InkWell(
-
-                  borderRadius:
-                      BorderRadius.circular(15),
-
-
-                  onTap:(){
-
-
-                    Navigator.push(
-
-                      context,
-
-                      MaterialPageRoute(
-
-                        builder:(_)=>
-                            AudioPlayerScreen(
-
-                          bibleId:
-                              widget.bibleId,
-
-                          book:
-                              widget.book,
-
-                          chapter:
-                              index + 1,
-
-                          chapterId:
-                              chapter["id"],
-
-                        ),
-
-                      ),
-
-                    );
-
-
-                  },
-
-
-
-                  child:Card(
-
-                    elevation:3,
-
-                    shape:
-                        RoundedRectangleBorder(
-
-                      borderRadius:
-                          BorderRadius.circular(15),
-
-                    ),
-
-
-                    child:Center(
-
-                      child:Text(
-
-                        "${index + 1}",
-
-                        style:
-                            const TextStyle(
-
-                          fontSize:22,
-
-                          fontWeight:
-                              FontWeight.bold,
-
-                        ),
-
-                      ),
-
-                    ),
-
-                  ),
-
-                );
-
-
-              },
-
-            ),
+      },
 
     );
 
+
+
+    if(response.statusCode == 200){
+
+
+      final data =
+          jsonDecode(response.body);
+
+
+      return data["data"];
+
+    }
+
+
+
+    throw Exception(
+      "Unable to load Bible books",
+    );
+
   }
+
+
+
+
+  // Get chapters inside selected book
+  static Future<List<dynamic>> getBookChapters({
+
+    required String bibleId,
+
+    required String bookId,
+
+  }) async {
+
+
+
+    final response = await http.get(
+
+      Uri.parse(
+
+        "${ApiConstants.baseUrl}/audio-bibles/"
+        "$bibleId/books/$bookId/chapters",
+
+      ),
+
+
+      headers: {
+
+        "api-key":
+            ApiConstants.apiKey,
+
+      },
+
+    );
+
+
+
+    if(response.statusCode == 200){
+
+
+      final data =
+          jsonDecode(response.body);
+
+
+      return data["data"];
+
+    }
+
+
+
+    throw Exception(
+      "Unable to load chapters",
+    );
+
+  }
+
+
+
+
+
+  // Get real audio URL for chapter
+  static Future<String> getChapterAudioUrl({
+
+    required String bibleId,
+
+    required String chapterId,
+
+  }) async {
+
+
+
+    final response = await http.get(
+
+      Uri.parse(
+
+        "${ApiConstants.baseUrl}/audio-bibles/"
+        "$bibleId/chapters/$chapterId",
+
+      ),
+
+
+      headers: {
+
+        "api-key":
+            ApiConstants.apiKey,
+
+      },
+
+    );
+
+
+
+    if(response.statusCode == 200){
+
+
+      final data =
+          jsonDecode(response.body);
+
+
+
+      return data["data"]["resourceUrl"];
+
+    }
+
+
+
+    throw Exception(
+      "Unable to load chapter audio",
+    );
+
+  }
+
 
 }
