@@ -1,424 +1,93 @@
-import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
-import '../services/audio_service.dart';
+import '../constants/api_constants.dart';
 
 
-class AudioPlayerScreen extends StatefulWidget {
+class AudioService {
 
-  final String bibleId;
-  final String book;
-  final String chapterId;
-  final int chapter;
 
+  static Future<List<dynamic>> getAudioBibles() async {
 
-  const AudioPlayerScreen({
+    final response = await http.get(
 
-    super.key,
+      Uri.parse(
+        "${ApiConstants.baseUrl}/audio-bibles",
+      ),
 
-    required this bibleId,
+      headers: {
 
-    required this.book,
+        "api-key":
+            ApiConstants.apiKey,
 
-    required this.chapterId,
+      },
 
-    required this.chapter,
+    );
 
-  });
 
+    if(response.statusCode == 200){
 
-  @override
-  State<AudioPlayerScreen> createState() =>
-      _AudioPlayerScreenState();
+      final data =
+          jsonDecode(response.body);
 
-}
-
-
-
-class _AudioPlayerScreenState
-    extends State<AudioPlayerScreen> {
-
-
-  final AudioPlayer player =
-      AudioPlayer();
-
-
-  bool loading = true;
-
-
-  Duration position =
-      Duration.zero;
-
-
-  Duration duration =
-      Duration.zero;
-
-
-
-  @override
-  void initState() {
-
-    super.initState();
-
-    loadAudio();
-
-
-    player.positionStream.listen((value){
-
-      if(mounted){
-
-        setState(() {
-
-          position = value;
-
-        });
-
-      }
-
-    });
-
-
-
-    player.durationStream.listen((value){
-
-      if(value != null && mounted){
-
-        setState(() {
-
-          duration = value;
-
-        });
-
-      }
-
-    });
-
-  }
-
-
-
-  Future<void> loadAudio() async {
-
-    try {
-
-
-      final audioUrl =
-          await AudioService.getChapterAudioUrl(
-
-        bibleId:
-            widget.bibleId,
-
-        chapterId:
-            widget.chapterId,
-
-      );
-
-
-
-      await player.setUrl(audioUrl);
-
-
-
-      if(mounted){
-
-        setState(() {
-
-          loading = false;
-
-        });
-
-      }
-
-
-
-    } catch(e){
-
-
-      if(mounted){
-
-        setState(() {
-
-          loading = false;
-
-        });
-
-
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
-
-          SnackBar(
-
-            content:
-                Text(
-                  e.toString(),
-                ),
-
-          ),
-
-        );
-
-      }
+      return data["data"];
 
     }
 
-  }
 
-
-
-  String formatTime(Duration time){
-
-    final minutes =
-        time.inMinutes
-            .toString()
-            .padLeft(2,'0');
-
-
-    final seconds =
-        (time.inSeconds % 60)
-            .toString()
-            .padLeft(2,'0');
-
-
-    return "$minutes:$seconds";
+    throw Exception(
+      "Unable to load audio Bibles",
+    );
 
   }
 
 
 
-  @override
-  void dispose(){
+  static Future<String> getChapterAudioUrl({
 
-    player.dispose();
+    required String bibleId,
 
-    super.dispose();
+    required String chapterId,
 
-  }
-
+  }) async {
 
 
-  @override
-  Widget build(BuildContext context){
+    final response = await http.get(
 
+      Uri.parse(
 
-    return Scaffold(
-
-      appBar: AppBar(
-
-        title:
-            Text(
-              "${widget.book} ${widget.chapter}",
-            ),
-
-        centerTitle:true,
+        "${ApiConstants.baseUrl}/audio-bibles/"
+        "$bibleId/chapters/$chapterId",
 
       ),
 
 
+      headers: {
 
-      body: loading
+        "api-key":
+            ApiConstants.apiKey,
 
-          ? const Center(
+      },
 
-              child:
-                  CircularProgressIndicator(),
+    );
 
-            )
 
-          : Padding(
 
-              padding:
-                  const EdgeInsets.all(25),
+    if(response.statusCode == 200){
 
 
-              child: Column(
+      final data =
+          jsonDecode(response.body);
 
-                mainAxisAlignment:
-                    MainAxisAlignment.center,
 
+      return data["data"]["resourceUrl"];
 
-                children:[
+    }
 
 
-                  const Icon(
 
-                    Icons.headphones,
-
-                    size:100,
-
-                  ),
-
-
-
-                  const SizedBox(height:25),
-
-
-
-                  Text(
-
-                    widget.book,
-
-                    style:
-                        const TextStyle(
-
-                      fontSize:28,
-
-                      fontWeight:
-                          FontWeight.bold,
-
-                    ),
-
-                  ),
-
-
-
-                  Text(
-
-                    "Chapter ${widget.chapter}",
-
-                    style:
-                        const TextStyle(
-                          fontSize:20,
-                        ),
-
-                  ),
-
-
-
-                  const SizedBox(height:40),
-
-
-
-                  Slider(
-
-                    value:
-                        position.inSeconds
-                            .toDouble()
-                            .clamp(
-                              0,
-                              duration.inSeconds
-                                  .toDouble(),
-                            ),
-
-
-                    max:
-                        duration.inSeconds
-                            .toDouble()
-                            .clamp(
-                              1,
-                              double.infinity,
-                            ),
-
-
-                    onChanged:(value){
-
-                      player.seek(
-
-                        Duration(
-                          seconds:
-                              value.toInt(),
-                        ),
-
-                      );
-
-                    },
-
-                  ),
-
-
-
-                  Row(
-
-                    mainAxisAlignment:
-                        MainAxisAlignment.spaceBetween,
-
-
-                    children:[
-
-                      Text(
-                        formatTime(position),
-                      ),
-
-
-                      Text(
-                        formatTime(duration),
-                      ),
-
-                    ],
-
-                  ),
-
-
-
-                  const SizedBox(height:30),
-
-
-
-                  StreamBuilder<PlayerState>(
-
-                    stream:
-                        player.playerStateStream,
-
-
-                    builder:(context,snapshot){
-
-
-                      final playing =
-                          snapshot.data
-                              ?.playing ??
-                          false;
-
-
-
-                      return IconButton(
-
-                        iconSize:80,
-
-
-                        icon: Icon(
-
-                          playing
-
-                          ? Icons.pause_circle
-
-                          : Icons.play_circle,
-
-                        ),
-
-
-
-                        onPressed:() async {
-
-
-                          if(playing){
-
-                            await player.pause();
-
-                          }
-
-                          else{
-
-                            await player.play();
-
-                          }
-
-
-                        },
-
-                      );
-
-
-                    },
-
-                  ),
-
-
-
-                ],
-
-              ),
-
-            ),
-
+    throw Exception(
+      "Unable to load chapter audio",
     );
 
   }
