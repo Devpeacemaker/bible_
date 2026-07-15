@@ -1,187 +1,193 @@
 import 'package:flutter/material.dart';
 
-import '../services/audio_service.dart';
+import 'audio_chapters_screen.dart';
 
 
-class AudioBibleScreen extends StatefulWidget {
-  const AudioBibleScreen({super.key});
+class AudioBooksScreen extends StatelessWidget {
 
-  @override
-  State<AudioBibleScreen> createState() =>
-      _AudioBibleScreenState();
-}
+  final String bibleId;
 
 
-class _AudioBibleScreenState
-    extends State<AudioBibleScreen> {
-
-  bool loading = true;
-
-  List<dynamic> audioBibles = [];
+  const AudioBooksScreen({
+    super.key,
+    required this.bibleId,
+  });
 
 
-  @override
-  void initState() {
-    super.initState();
+  final List<String> books = const [
 
-    loadAudioBibles();
-  }
+    "Genesis",
+    "Exodus",
+    "Leviticus",
+    "Numbers",
+    "Deuteronomy",
+    "Joshua",
+    "Judges",
+    "Ruth",
+    "1 Samuel",
+    "2 Samuel",
+    "1 Kings",
+    "2 Kings",
+    "Psalms",
+    "Proverbs",
+    "Isaiah",
+    "Jeremiah",
+    "Ezekiel",
+    "Daniel",
+    "Matthew",
+    "Mark",
+    "Luke",
+    "John",
+    "Acts",
+    "Romans",
+    "1 Corinthians",
+    "2 Corinthians",
+    "Galatians",
+    "Ephesians",
+    "Philippians",
+    "Colossians",
+    "Hebrews",
+    "James",
+    "1 Peter",
+    "2 Peter",
+    "1 John",
+    "Revelation",
 
-
-
-  Future<void> loadAudioBibles() async {
-
-    try {
-
-      final result =
-          await AudioService.getAudioBibles();
-
-
-      setState(() {
-
-        audioBibles = result;
-
-        loading = false;
-
-      });
-
-
-    } catch (e) {
-
-      setState(() {
-
-        loading = false;
-
-      });
-
-
-      if (mounted) {
-
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
-
-          SnackBar(
-            content:
-                Text(e.toString()),
-          ),
-
-        );
-
-      }
-
-    }
-
-  }
-
+  ];
 
 
   @override
   Widget build(BuildContext context) {
 
+
     return Scaffold(
 
       appBar: AppBar(
+
         title:
-            const Text("Audio Bible"),
+            const Text(
+              "Audio Bible Books",
+            ),
+
         centerTitle: true,
+
       ),
 
 
-      body: loading
+      body: ListView.builder(
 
-          ? const Center(
-              child:
-                  CircularProgressIndicator(),
-            )
+        padding:
+            const EdgeInsets.all(16),
 
 
-          : audioBibles.isEmpty
-
-              ? const Center(
-                  child:
-                      Text(
-                        "No audio Bibles found.",
-                      ),
-                )
+        itemCount:
+            books.length,
 
 
-              : ListView.builder(
-
-                  padding:
-                      const EdgeInsets.all(16),
+        itemBuilder:
+            (context, index) {
 
 
-                  itemCount:
-                      audioBibles.length,
+          return Card(
+
+            elevation: 3,
 
 
-                  itemBuilder:
-                      (context, index) {
-
-
-                    final bible =
-                        audioBibles[index];
-
-
-                    return Card(
-
-                      elevation: 3,
-
-
-                      margin:
-                          const EdgeInsets.only(
-                            bottom: 12,
-                          ),
-
-
-                      child: ListTile(
-
-                        leading:
-                            const CircleAvatar(
-                              child:
-                                  Icon(
-                                    Icons.headphones,
-                                  ),
-                            ),
-
-
-                        title:
-                            Text(
-                              bible["name"] ??
-                                  "Unknown Bible",
-                            ),
-
-
-                        subtitle:
-                            Text(
-                              bible["description"] ??
-                                  "Audio Bible",
-                            ),
-
-
-                        trailing:
-                            const Icon(
-                              Icons.arrow_forward_ios,
-                              size: 18,
-                            ),
-
-
-                        onTap: () {
-
-                          // Next step:
-                          // open books screen
-
-                        },
-
-                      ),
-
-                    );
-
-                  },
-
+            margin:
+                const EdgeInsets.only(
+                  bottom: 10,
                 ),
 
+
+            shape:
+                RoundedRectangleBorder(
+
+              borderRadius:
+                  BorderRadius.circular(16),
+
+            ),
+
+
+
+            child: ListTile(
+
+
+              leading:
+                  CircleAvatar(
+
+                child:
+                    Text(
+                      "${index + 1}",
+                    ),
+
+              ),
+
+
+
+              title:
+                  Text(
+                    books[index],
+
+                    style:
+                        const TextStyle(
+
+                      fontWeight:
+                          FontWeight.bold,
+
+                    ),
+
+                  ),
+
+
+
+              trailing:
+                  const Icon(
+                    Icons.play_circle_outline,
+                  ),
+
+
+
+              onTap: () {
+
+
+                Navigator.push(
+
+                  context,
+
+                  MaterialPageRoute(
+
+                    builder: (_) =>
+                        AudioChaptersScreen(
+
+                          bibleId:
+                              bibleId,
+
+                          book:
+                              books[index],
+
+                        ),
+
+                  ),
+
+                );
+
+
+              },
+
+            ),
+
+
+          );
+
+
+        },
+
+
+      ),
+
+
     );
+
 
   }
 
