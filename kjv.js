@@ -1,93 +1,255 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart';
 
-import '../constants/api_constants.dart';
-
-
-class AudioService {
+import '../services/audio_service.dart';
+import 'audio_player_screen.dart';
 
 
-  static Future<List<dynamic>> getAudioBibles() async {
+class AudioChaptersScreen extends StatefulWidget {
 
-    final response = await http.get(
-
-      Uri.parse(
-        "${ApiConstants.baseUrl}/audio-bibles",
-      ),
-
-      headers: {
-
-        "api-key":
-            ApiConstants.apiKey,
-
-      },
-
-    );
+  final String bibleId;
+  final String bookId;
+  final String book;
 
 
-    if(response.statusCode == 200){
+  const AudioChaptersScreen({
 
-      final data =
-          jsonDecode(response.body);
+    super.key,
 
-      return data["data"];
+    required this.bibleId,
 
-    }
+    required this.bookId,
+
+    required this.book,
+
+  });
 
 
-    throw Exception(
-      "Unable to load audio Bibles",
-    );
+  @override
+  State<AudioChaptersScreen> createState() =>
+      _AudioChaptersScreenState();
+
+}
+
+
+
+class _AudioChaptersScreenState
+    extends State<AudioChaptersScreen> {
+
+
+  bool loading = true;
+
+
+  List<dynamic> chapters = [];
+
+
+
+  @override
+  void initState(){
+
+    super.initState();
+
+    loadChapters();
 
   }
 
 
 
-  static Future<String> getChapterAudioUrl({
+  Future<void> loadChapters() async {
 
-    required String bibleId,
-
-    required String chapterId,
-
-  }) async {
+    try {
 
 
-    final response = await http.get(
+      final result =
+          await AudioService.getBookChapters(
 
-      Uri.parse(
+        bibleId:
+            widget.bibleId,
 
-        "${ApiConstants.baseUrl}/audio-bibles/"
-        "$bibleId/chapters/$chapterId",
+        bookId:
+            widget.bookId,
+
+      );
+
+
+
+      setState((){
+
+        chapters = result;
+
+        loading = false;
+
+      });
+
+
+
+    }catch(e){
+
+
+      setState((){
+
+        loading = false;
+
+      });
+
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+
+        SnackBar(
+          content:
+              Text(e.toString()),
+        ),
+
+      );
+
+    }
+
+  }
+
+
+
+  @override
+  Widget build(BuildContext context){
+
+
+    return Scaffold(
+
+      appBar: AppBar(
+
+        title:
+            Text(widget.book),
+
+        centerTitle:true,
 
       ),
 
 
-      headers: {
 
-        "api-key":
-            ApiConstants.apiKey,
-
-      },
-
-    );
+      body: loading
 
 
+          ? const Center(
 
-    if(response.statusCode == 200){
+              child:
+                  CircularProgressIndicator(),
 
-
-      final data =
-          jsonDecode(response.body);
-
-
-      return data["data"]["resourceUrl"];
-
-    }
+            )
 
 
+          : GridView.builder(
 
-    throw Exception(
-      "Unable to load chapter audio",
+              padding:
+                  const EdgeInsets.all(16),
+
+
+              itemCount:
+                  chapters.length,
+
+
+              gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+
+                crossAxisCount:4,
+
+                crossAxisSpacing:12,
+
+                mainAxisSpacing:12,
+
+              ),
+
+
+
+              itemBuilder:(context,index){
+
+
+                final chapter =
+                    chapters[index];
+
+
+
+                return InkWell(
+
+                  borderRadius:
+                      BorderRadius.circular(15),
+
+
+                  onTap:(){
+
+
+                    Navigator.push(
+
+                      context,
+
+                      MaterialPageRoute(
+
+                        builder:(_)=>
+                            AudioPlayerScreen(
+
+                          bibleId:
+                              widget.bibleId,
+
+                          book:
+                              widget.book,
+
+                          chapter:
+                              index + 1,
+
+                          chapterId:
+                              chapter["id"],
+
+                        ),
+
+                      ),
+
+                    );
+
+
+                  },
+
+
+
+                  child:Card(
+
+                    elevation:3,
+
+                    shape:
+                        RoundedRectangleBorder(
+
+                      borderRadius:
+                          BorderRadius.circular(15),
+
+                    ),
+
+
+                    child:Center(
+
+                      child:Text(
+
+                        "${index + 1}",
+
+                        style:
+                            const TextStyle(
+
+                          fontSize:22,
+
+                          fontWeight:
+                              FontWeight.bold,
+
+                        ),
+
+                      ),
+
+                    ),
+
+                  ),
+
+                );
+
+
+              },
+
+            ),
+
     );
 
   }
