@@ -1,234 +1,115 @@
 import 'package:flutter/material.dart';
 
 import '../services/notes_service.dart';
-import 'saved_notes_screen.dart';
+import 'view_note_screen.dart';
 
-class NotesScreen extends StatefulWidget {
-  const NotesScreen({super.key});
+class SavedNotesScreen extends StatefulWidget {
+  const SavedNotesScreen({super.key});
 
   @override
-  State<NotesScreen> createState() =>
-      _NotesScreenState();
+  State<SavedNotesScreen> createState() =>
+      _SavedNotesScreenState();
 }
 
-class _NotesScreenState
-    extends State<NotesScreen> {
+class _SavedNotesScreenState
+    extends State<SavedNotesScreen> {
 
-  final titleController =
-      TextEditingController();
-
-  final noteController =
-      TextEditingController();
-
-
-  Future<void> saveNote() async {
-
-    if (titleController.text.trim().isEmpty ||
-        noteController.text.trim().isEmpty) {
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Please enter a title and your notes.",
-          ),
-        ),
-      );
-
-      return;
-    }
-
-
-    await NotesService.addNote(
-      title: titleController.text.trim(),
-      content: noteController.text.trim(),
-    );
-
-
-    titleController.clear();
-    noteController.clear();
-
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Note saved successfully."),
-      ),
-    );
+  void refresh() {
+    setState(() {});
   }
-
 
   @override
   Widget build(BuildContext context) {
 
+    final notes = NotesService.getNotes();
+
     return Scaffold(
 
       appBar: AppBar(
-        title: const Text("Bible Notes"),
+        title: const Text("Saved Notes"),
         centerTitle: true,
-
-        actions: [
-
-          IconButton(
-
-            icon: const Icon(Icons.folder),
-
-            tooltip: "Saved Notes",
-
-            onPressed: () async {
-
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      const SavedNotesScreen(),
-                ),
-              );
-
-              setState(() {});
-            },
-
-          ),
-
-        ],
-
       ),
 
+      body: notes.isEmpty
 
-      body: SafeArea(
-
-        child: Padding(
-
-          padding:
-              const EdgeInsets.all(16),
-
-          child: Column(
-
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-
-            children: [
-
-              const Text(
-
-                "Title",
-
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-
+          ? const Center(
+              child: Text(
+                "No saved notes yet.",
+                style: TextStyle(fontSize: 18),
               ),
+            )
 
-              const SizedBox(height: 8),
+          : ListView.builder(
 
-              TextField(
+              padding: const EdgeInsets.all(15),
 
-                controller:
-                    titleController,
+              itemCount: notes.length,
 
-                decoration:
-                    InputDecoration(
+              itemBuilder: (context, index) {
 
-                  hintText:
-                      "Example: Sunday Service",
+                final note = notes[index];
 
-                  border:
-                      OutlineInputBorder(
+                return Card(
 
+                  margin:
+                      const EdgeInsets.only(bottom: 15),
+
+                  elevation: 3,
+
+                  shape: RoundedRectangleBorder(
                     borderRadius:
-                        BorderRadius.circular(12),
-
+                        BorderRadius.circular(15),
                   ),
 
-                ),
+                  child: ListTile(
 
-              ),
+                    contentPadding:
+                        const EdgeInsets.all(15),
 
-              const SizedBox(height: 20),
-
-              const Text(
-
-                "Your Notes",
-
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-
-              ),
-
-              const SizedBox(height: 8),
-
-              Expanded(
-
-                child: TextField(
-
-                  controller:
-                      noteController,
-
-                  expands: true,
-
-                  maxLines: null,
-
-                  textAlignVertical:
-                      TextAlignVertical.top,
-
-                  decoration:
-                      InputDecoration(
-
-                    hintText:
-                        "Write everything you learned here...",
-
-                    alignLabelWithHint:
-                        true,
-
-                    border:
-                        OutlineInputBorder(
-
-                      borderRadius:
-                          BorderRadius.circular(12),
-
+                    title: Text(
+                      note["title"],
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
 
+                    subtitle: Padding(
+                      padding:
+                          const EdgeInsets.only(top: 8),
+                      child: Text(
+                        note["content"],
+                        maxLines: 3,
+                        overflow:
+                            TextOverflow.ellipsis,
+                      ),
+                    ),
+
+                    trailing:
+                        const Icon(Icons.chevron_right),
+
+                    onTap: () async {
+
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ViewNoteScreen(
+                                index: index,
+                              ),
+                        ),
+                      );
+
+                      refresh();
+                    },
+
                   ),
 
-                ),
+                );
+              },
 
-              ),
-
-              const SizedBox(height: 20),
-
-              SizedBox(
-
-                width: double.infinity,
-
-                height: 55,
-
-                child: ElevatedButton.icon(
-
-                  icon: const Icon(Icons.save),
-
-                  label: const Text(
-                    "SAVE NOTE",
-                  ),
-
-                  onPressed: saveNote,
-
-                ),
-
-              ),
-
-            ],
-
-          ),
-
-        ),
-
-      ),
+            ),
 
     );
-
   }
-
 }
