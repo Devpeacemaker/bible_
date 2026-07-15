@@ -1,58 +1,234 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/material.dart';
 
-class NotesService {
-  static const String boxName = "bible_notes";
+import '../services/notes_service.dart';
+import 'saved_notes_screen.dart';
 
-  static Future<void> init() async {
-    if (!Hive.isBoxOpen(boxName)) {
-      await Hive.openBox(boxName);
+class NotesScreen extends StatefulWidget {
+  const NotesScreen({super.key});
+
+  @override
+  State<NotesScreen> createState() =>
+      _NotesScreenState();
+}
+
+class _NotesScreenState
+    extends State<NotesScreen> {
+
+  final titleController =
+      TextEditingController();
+
+  final noteController =
+      TextEditingController();
+
+
+  Future<void> saveNote() async {
+
+    if (titleController.text.trim().isEmpty ||
+        noteController.text.trim().isEmpty) {
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Please enter a title and your notes.",
+          ),
+        ),
+      );
+
+      return;
     }
-  }
 
-  static Box get _box => Hive.box(boxName);
 
-  static List<Map<String, dynamic>> getNotes() {
-    return _box.values
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
-  }
+    await NotesService.addNote(
+      title: titleController.text.trim(),
+      content: noteController.text.trim(),
+    );
 
-  static Future<void> addNote({
-    required String title,
-    required String content,
-  }) async {
-    await _box.add({
-      "title": title,
-      "content": content,
-      "createdAt": DateTime.now().toIso8601String(),
-      "updatedAt": DateTime.now().toIso8601String(),
-    });
-  }
 
-  static Future<void> updateNote({
-    required int index,
-    required String title,
-    required String content,
-  }) async {
-    await _box.putAt(index, {
-      "title": title,
-      "content": content,
-      "createdAt":
-          (_box.getAt(index) as Map)["createdAt"],
-      "updatedAt":
-          DateTime.now().toIso8601String(),
-    });
-  }
+    titleController.clear();
+    noteController.clear();
 
-  static Future<void> deleteNote(
-      int index) async {
-    await _box.deleteAt(index);
-  }
 
-  static Map<String, dynamic> getNote(
-      int index) {
-    return Map<String, dynamic>.from(
-      _box.getAt(index),
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Note saved successfully."),
+      ),
     );
   }
+
+
+  @override
+  Widget build(BuildContext context) {
+
+    return Scaffold(
+
+      appBar: AppBar(
+        title: const Text("Bible Notes"),
+        centerTitle: true,
+
+        actions: [
+
+          IconButton(
+
+            icon: const Icon(Icons.folder),
+
+            tooltip: "Saved Notes",
+
+            onPressed: () async {
+
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const SavedNotesScreen(),
+                ),
+              );
+
+              setState(() {});
+            },
+
+          ),
+
+        ],
+
+      ),
+
+
+      body: SafeArea(
+
+        child: Padding(
+
+          padding:
+              const EdgeInsets.all(16),
+
+          child: Column(
+
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+
+            children: [
+
+              const Text(
+
+                "Title",
+
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+
+              ),
+
+              const SizedBox(height: 8),
+
+              TextField(
+
+                controller:
+                    titleController,
+
+                decoration:
+                    InputDecoration(
+
+                  hintText:
+                      "Example: Sunday Service",
+
+                  border:
+                      OutlineInputBorder(
+
+                    borderRadius:
+                        BorderRadius.circular(12),
+
+                  ),
+
+                ),
+
+              ),
+
+              const SizedBox(height: 20),
+
+              const Text(
+
+                "Your Notes",
+
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+
+              ),
+
+              const SizedBox(height: 8),
+
+              Expanded(
+
+                child: TextField(
+
+                  controller:
+                      noteController,
+
+                  expands: true,
+
+                  maxLines: null,
+
+                  textAlignVertical:
+                      TextAlignVertical.top,
+
+                  decoration:
+                      InputDecoration(
+
+                    hintText:
+                        "Write everything you learned here...",
+
+                    alignLabelWithHint:
+                        true,
+
+                    border:
+                        OutlineInputBorder(
+
+                      borderRadius:
+                          BorderRadius.circular(12),
+
+                    ),
+
+                  ),
+
+                ),
+
+              ),
+
+              const SizedBox(height: 20),
+
+              SizedBox(
+
+                width: double.infinity,
+
+                height: 55,
+
+                child: ElevatedButton.icon(
+
+                  icon: const Icon(Icons.save),
+
+                  label: const Text(
+                    "SAVE NOTE",
+                  ),
+
+                  onPressed: saveNote,
+
+                ),
+
+              ),
+
+            ],
+
+          ),
+
+        ),
+
+      ),
+
+    );
+
+  }
+
 }
