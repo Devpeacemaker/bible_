@@ -1,63 +1,83 @@
 import 'package:flutter/material.dart';
 
-import 'audio_chapters_screen.dart';
+import 'audio_player_screen.dart';
 
 
-class AudioBooksScreen extends StatelessWidget {
+class AudioChaptersScreen extends StatelessWidget {
 
   final String bibleId;
+  final String book;
 
 
-  const AudioBooksScreen({
+  const AudioChaptersScreen({
     super.key,
     required this.bibleId,
+    required this.book,
   });
 
 
-  final List<String> books = const [
 
-    "Genesis",
-    "Exodus",
-    "Leviticus",
-    "Numbers",
-    "Deuteronomy",
-    "Joshua",
-    "Judges",
-    "Ruth",
-    "1 Samuel",
-    "2 Samuel",
-    "1 Kings",
-    "2 Kings",
-    "Psalms",
-    "Proverbs",
-    "Isaiah",
-    "Jeremiah",
-    "Ezekiel",
-    "Daniel",
-    "Matthew",
-    "Mark",
-    "Luke",
-    "John",
-    "Acts",
-    "Romans",
-    "1 Corinthians",
-    "2 Corinthians",
-    "Galatians",
-    "Ephesians",
-    "Philippians",
-    "Colossians",
-    "Hebrews",
-    "James",
-    "1 Peter",
-    "2 Peter",
-    "1 John",
-    "Revelation",
+  int getChapterCount() {
 
-  ];
+    switch (book) {
+
+      case "Genesis":
+        return 50;
+
+      case "Exodus":
+        return 40;
+
+      case "Leviticus":
+        return 27;
+
+      case "Numbers":
+        return 36;
+
+      case "Deuteronomy":
+        return 34;
+
+      case "Psalms":
+        return 150;
+
+      case "Proverbs":
+        return 31;
+
+      case "Isaiah":
+        return 66;
+
+      case "Matthew":
+        return 28;
+
+      case "Mark":
+        return 16;
+
+      case "Luke":
+        return 24;
+
+      case "John":
+        return 21;
+
+      case "Acts":
+        return 28;
+
+      case "Romans":
+        return 16;
+
+      case "Revelation":
+        return 22;
+
+      default:
+        return 10;
+    }
+  }
+
 
 
   @override
   Widget build(BuildContext context) {
+
+
+    final chapters = getChapterCount();
 
 
     return Scaffold(
@@ -65,117 +85,122 @@ class AudioBooksScreen extends StatelessWidget {
       appBar: AppBar(
 
         title:
-            const Text(
-              "Audio Bible Books",
-            ),
+            Text(book),
 
         centerTitle: true,
 
       ),
 
 
-      body: ListView.builder(
+
+      body: GridView.builder(
 
         padding:
             const EdgeInsets.all(16),
 
 
         itemCount:
-            books.length,
+            chapters,
+
+
+        gridDelegate:
+            const SliverGridDelegateWithFixedCrossAxisCount(
+
+          crossAxisCount: 4,
+
+          crossAxisSpacing: 12,
+
+          mainAxisSpacing: 12,
+
+        ),
+
 
 
         itemBuilder:
             (context, index) {
 
 
-          return Card(
+          final chapter =
+              index + 1;
 
-            elevation: 3,
 
 
-            margin:
-                const EdgeInsets.only(
-                  bottom: 10,
+          return InkWell(
+
+            borderRadius:
+                BorderRadius.circular(15),
+
+
+            onTap: () {
+
+
+              Navigator.push(
+
+                context,
+
+                MaterialPageRoute(
+
+                  builder: (_) =>
+                      AudioPlayerScreen(
+
+                        bibleId:
+                            bibleId,
+
+                        book:
+                            book,
+
+                        chapter:
+                            chapter,
+
+                      ),
+
                 ),
 
+              );
 
-            shape:
-                RoundedRectangleBorder(
 
-              borderRadius:
-                  BorderRadius.circular(16),
-
-            ),
+            },
 
 
 
-            child: ListTile(
+            child: Card(
+
+              elevation: 3,
 
 
-              leading:
-                  CircleAvatar(
+              shape:
+                  RoundedRectangleBorder(
 
-                child:
-                    Text(
-                      "${index + 1}",
-                    ),
+                borderRadius:
+                    BorderRadius.circular(15),
 
               ),
 
 
 
-              title:
-                  Text(
-                    books[index],
+              child:
+                  Center(
 
-                    style:
-                        const TextStyle(
+                child:
+                    Text(
 
-                      fontWeight:
-                          FontWeight.bold,
+                      "$chapter",
+
+                      style:
+                          const TextStyle(
+
+                        fontSize: 22,
+
+                        fontWeight:
+                            FontWeight.bold,
+
+                      ),
 
                     ),
 
-                  ),
-
-
-
-              trailing:
-                  const Icon(
-                    Icons.play_circle_outline,
-                  ),
-
-
-
-              onTap: () {
-
-
-                Navigator.push(
-
-                  context,
-
-                  MaterialPageRoute(
-
-                    builder: (_) =>
-                        AudioChaptersScreen(
-
-                          bibleId:
-                              bibleId,
-
-                          book:
-                              books[index],
-
-                        ),
-
-                  ),
-
-                );
-
-
-              },
+              ),
 
             ),
-
 
           );
 
