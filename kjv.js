@@ -1,40 +1,29 @@
 import 'package:flutter/material.dart';
 
 import '../services/audio_service.dart';
-import 'audio_chapters_screen.dart';
+import 'audio_books_screen.dart';
 
 
-class AudioBooksScreen extends StatefulWidget {
+class AudioBibleScreen extends StatefulWidget {
 
-  final String bibleId;
-
-
-  const AudioBooksScreen({
-
-    super.key,
-
-    required this.bibleId,
-
-  });
-
+  const AudioBibleScreen({super.key});
 
 
   @override
-  State<AudioBooksScreen> createState() =>
-      _AudioBooksScreenState();
+  State<AudioBibleScreen> createState() =>
+      _AudioBibleScreenState();
 
 }
 
 
 
-class _AudioBooksScreenState
-    extends State<AudioBooksScreen> {
+class _AudioBibleScreenState
+    extends State<AudioBibleScreen> {
 
 
   bool loading = true;
 
-
-  List<dynamic> books = [];
+  List<dynamic> audioBibles = [];
 
 
 
@@ -43,46 +32,36 @@ class _AudioBooksScreenState
 
     super.initState();
 
-    loadBooks();
+    loadAudioBibles();
 
   }
 
 
 
-  Future<void> loadBooks() async {
+  Future<void> loadAudioBibles() async {
 
     try {
 
-
       final result =
-          await AudioService.getBooks(
-
-        bibleId:
-            widget.bibleId,
-
-      );
+          await AudioService.getAudioBibles();
 
 
+      setState((){
 
-      setState(() {
-
-        books = result;
+        audioBibles = result;
 
         loading = false;
 
       });
-
 
 
     } catch(e){
 
-
-      setState(() {
+      setState((){
 
         loading = false;
 
       });
-
 
 
       if(mounted){
@@ -119,7 +98,7 @@ class _AudioBooksScreenState
 
         title:
             const Text(
-              "Audio Bible Books",
+              "Audio Bible",
             ),
 
         centerTitle:true,
@@ -140,14 +119,14 @@ class _AudioBooksScreenState
 
 
 
-          : books.isEmpty
+          : audioBibles.isEmpty
 
 
               ? const Center(
 
                   child:
                       Text(
-                        "No books found",
+                        "No Audio Bibles available",
                       ),
 
                 )
@@ -161,15 +140,15 @@ class _AudioBooksScreenState
 
 
                   itemCount:
-                      books.length,
+                      audioBibles.length,
 
 
 
                   itemBuilder:(context,index){
 
 
-                    final book =
-                        books[index];
+                    final bible =
+                        audioBibles[index];
 
 
 
@@ -189,7 +168,7 @@ class _AudioBooksScreenState
                           RoundedRectangleBorder(
 
                         borderRadius:
-                            BorderRadius.circular(16),
+                            BorderRadius.circular(18),
 
                       ),
 
@@ -198,12 +177,19 @@ class _AudioBooksScreenState
                       child:ListTile(
 
 
+                        contentPadding:
+                            const EdgeInsets.all(16),
+
+
+
                         leading:
-                            CircleAvatar(
+                            const CircleAvatar(
+
+                          radius:25,
 
                           child:
-                              Text(
-                                "${index + 1}",
+                              Icon(
+                                Icons.headphones,
                               ),
 
                         ),
@@ -213,8 +199,8 @@ class _AudioBooksScreenState
                         title:
                             Text(
 
-                              book["name"] ??
-                                  "Unknown",
+                              bible["name"] ??
+                                  "Audio Bible",
 
                               style:
                                   const TextStyle(
@@ -228,10 +214,22 @@ class _AudioBooksScreenState
 
 
 
+                        subtitle:
+                            Text(
+
+                              bible["description"] ??
+                                  "Listen to Scripture",
+
+                            ),
+
+
+
                         trailing:
                             const Icon(
 
-                              Icons.play_circle,
+                              Icons.arrow_forward_ios,
+
+                              size:18,
 
                             ),
 
@@ -248,16 +246,10 @@ class _AudioBooksScreenState
 
                               builder:(_)=>
 
-                                  AudioChaptersScreen(
+                                  AudioBooksScreen(
 
                                 bibleId:
-                                    widget.bibleId,
-
-                                bookId:
-                                    book["id"],
-
-                                book:
-                                    book["name"],
+                                    bible["id"],
 
                               ),
 
