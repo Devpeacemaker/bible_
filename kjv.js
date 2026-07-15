@@ -1,39 +1,177 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart';
 
-class AIService {
-  // Replace with your own Gemini API key in your local project.
-  static const String apiKey = "AQ.Ab8RN6IZoVVsrvaLFF4YIM4pzrAtr_-bGizHVTEyh_P1sqfPsw";
+import '../services/ai_service.dart';
 
-  static Future<String> askBible(String question) async {
-    final url = Uri.parse(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey",
-    );
+class AIBibleAssistantScreen extends StatefulWidget {
+  const AIBibleAssistantScreen({super.key});
 
-    final response = await http.post(
-      url,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "contents": [
-          {
-            "parts": [
-              {
-                "text":
-                    "You are PEACE M Bible AI. Answer only Bible-related questions. Base your answers on Scripture. Quote relevant Bible verses where appropriate. If asked about non-Bible topics, politely explain that you are a Bible assistant.\n\nQuestion: $question"
-              }
-            ]
-          }
-        ]
-      }),
-    );
+  @override
+  State<AIBibleAssistantScreen> createState() =>
+      _AIBibleAssistantScreenState();
+}
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data["candidates"][0]["content"]["parts"][0]["text"];
+class _AIBibleAssistantScreenState
+    extends State<AIBibleAssistantScreen> {
+  final TextEditingController controller =
+      TextEditingController();
+
+  final List<Map<String, String>> messages = [];
+
+  bool loading = false;
+
+  Future<void> sendMessage() async {
+    if (controller.text.trim().isEmpty || loading) {
+      return;
     }
 
-    return "Unable to get a response from the AI service.";
+    final question = controller.text.trim();
+
+    controller.clear();
+
+    setState(() {
+      loading = true;
+
+      messages.add({
+        "sender": "user",
+        "text": question,
+      });
+
+      messages.add({
+        "sender": "ai",
+        "text": "Thinking...",
+      });
+    });
+
+    try {
+      final response =
+          await AIService.askBible(question);
+
+      setState(() {
+        messages.removeLast();
+
+        messages.add({
+          "sender": "ai",
+          "text": response,
+        });
+
+        loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        messages.removeLast();
+
+        messages.add({
+          "sender": "ai",
+          "text":
+              "Unable to connect to the AI service.\n\n$e",
+        });
+
+        loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("AI Bible Assistant"),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(15),
+              itemCount: messages.length,
+              itemBuilder: (context, index) {
+                final msg = messages[index];
+
+                final isUser =
+                    msg["sender"] == "user";
+
+                return Align(
+                  alignment: isUser
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 6,
+                    ),
+                    padding: const EdgeInsets.all(14),
+                    constraints:
+                        const BoxConstraints(
+                      maxWidth: 320,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isUser
+                          ? Colors.deepPurple
+                          : Colors.grey.shade300,
+                      borderRadius:
+                          BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      msg["text"]!,
+                      style: TextStyle(
+                        color: isUser
+                            ? Colors.white
+                            : Colors.black,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      textInputAction: TextInputAction.send,
+                      minLines: 1,
+                      maxLines: 5,
+                      onSubmitted: (_) => sendMessage(),
+                      decoration: const InputDecoration(
+                        hintText: "Ask a Bible question...",
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  loading
+                      ? const Padding(
+                          padding: EdgeInsets.all(10),
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        )
+                      : IconButton(
+                          icon: const Icon(Icons.send),
+                          onPressed: () {
+                            sendMessage();
+                          },
+                        ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 }
