@@ -1,207 +1,285 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart';
 
-import '../constants/api_constants.dart';
-
-
-class AudioService {
+import '../services/audio_service.dart';
+import 'audio_chapters_screen.dart';
 
 
-  // Get available Audio Bibles
-  static Future<List<dynamic>> getAudioBibles() async {
+class AudioBooksScreen extends StatefulWidget {
 
-    final response = await http.get(
-
-      Uri.parse(
-        "${ApiConstants.baseUrl}/audio-bibles",
-      ),
-
-      headers: {
-
-        "api-key":
-            ApiConstants.apiKey,
-
-      },
-
-    );
+  final String bibleId;
 
 
-    if (response.statusCode == 200) {
+  const AudioBooksScreen({
 
-      final data =
-          jsonDecode(response.body);
+    super.key,
 
-      return data["data"];
+    required this.bibleId,
 
-    }
-
-
-    throw Exception(
-      "Unable to load audio Bibles",
-    );
-
-  }
+  });
 
 
 
+  @override
+  State<AudioBooksScreen> createState() =>
+      _AudioBooksScreenState();
 
-  // Get books inside selected Audio Bible
-  static Future<List<dynamic>> getBooks({
-
-    required String bibleId,
-
-  }) async {
-
-
-    final response = await http.get(
-
-      Uri.parse(
-
-        "${ApiConstants.baseUrl}/audio-bibles/"
-        "$bibleId/books",
-
-      ),
-
-
-      headers: {
-
-        "api-key":
-            ApiConstants.apiKey,
-
-      },
-
-    );
+}
 
 
 
-    if(response.statusCode == 200){
+class _AudioBooksScreenState
+    extends State<AudioBooksScreen> {
 
 
-      final data =
-          jsonDecode(response.body);
+  bool loading = true;
 
 
-      return data["data"];
-
-    }
+  List<dynamic> books = [];
 
 
 
-    throw Exception(
-      "Unable to load Bible books",
-    );
+  @override
+  void initState(){
+
+    super.initState();
+
+    loadBooks();
 
   }
 
 
 
+  Future<void> loadBooks() async {
 
-  // Get chapters inside selected book
-  static Future<List<dynamic>> getBookChapters({
-
-    required String bibleId,
-
-    required String bookId,
-
-  }) async {
+    try {
 
 
+      final result =
+          await AudioService.getBooks(
 
-    final response = await http.get(
+        bibleId:
+            widget.bibleId,
 
-      Uri.parse(
-
-        "${ApiConstants.baseUrl}/audio-bibles/"
-        "$bibleId/books/$bookId/chapters",
-
-      ),
-
-
-      headers: {
-
-        "api-key":
-            ApiConstants.apiKey,
-
-      },
-
-    );
+      );
 
 
 
-    if(response.statusCode == 200){
+      setState(() {
+
+        books = result;
+
+        loading = false;
+
+      });
 
 
-      final data =
-          jsonDecode(response.body);
+
+    } catch(e){
 
 
-      return data["data"];
+      setState(() {
+
+        loading = false;
+
+      });
+
+
+
+      if(mounted){
+
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
+
+          SnackBar(
+
+            content:
+                Text(
+                  e.toString(),
+                ),
+
+          ),
+
+        );
+
+      }
 
     }
-
-
-
-    throw Exception(
-      "Unable to load chapters",
-    );
 
   }
 
 
 
+  @override
+  Widget build(BuildContext context){
 
 
-  // Get real audio URL for chapter
-  static Future<String> getChapterAudioUrl({
+    return Scaffold(
 
-    required String bibleId,
+      appBar: AppBar(
 
-    required String chapterId,
+        title:
+            const Text(
+              "Audio Bible Books",
+            ),
 
-  }) async {
-
-
-
-    final response = await http.get(
-
-      Uri.parse(
-
-        "${ApiConstants.baseUrl}/audio-bibles/"
-        "$bibleId/chapters/$chapterId",
+        centerTitle:true,
 
       ),
 
 
-      headers: {
 
-        "api-key":
-            ApiConstants.apiKey,
-
-      },
-
-    );
+      body: loading
 
 
+          ? const Center(
 
-    if(response.statusCode == 200){
+              child:
+                  CircularProgressIndicator(),
 
-
-      final data =
-          jsonDecode(response.body);
+            )
 
 
 
-      return data["data"]["resourceUrl"];
-
-    }
+          : books.isEmpty
 
 
+              ? const Center(
 
-    throw Exception(
-      "Unable to load chapter audio",
+                  child:
+                      Text(
+                        "No books found",
+                      ),
+
+                )
+
+
+
+              : ListView.builder(
+
+                  padding:
+                      const EdgeInsets.all(16),
+
+
+                  itemCount:
+                      books.length,
+
+
+
+                  itemBuilder:(context,index){
+
+
+                    final book =
+                        books[index];
+
+
+
+                    return Card(
+
+                      elevation:4,
+
+
+                      margin:
+                          const EdgeInsets.only(
+                            bottom:12,
+                          ),
+
+
+
+                      shape:
+                          RoundedRectangleBorder(
+
+                        borderRadius:
+                            BorderRadius.circular(16),
+
+                      ),
+
+
+
+                      child:ListTile(
+
+
+                        leading:
+                            CircleAvatar(
+
+                          child:
+                              Text(
+                                "${index + 1}",
+                              ),
+
+                        ),
+
+
+
+                        title:
+                            Text(
+
+                              book["name"] ??
+                                  "Unknown",
+
+                              style:
+                                  const TextStyle(
+
+                                fontWeight:
+                                    FontWeight.bold,
+
+                              ),
+
+                            ),
+
+
+
+                        trailing:
+                            const Icon(
+
+                              Icons.play_circle,
+
+                            ),
+
+
+
+                        onTap:(){
+
+
+                          Navigator.push(
+
+                            context,
+
+                            MaterialPageRoute(
+
+                              builder:(_)=>
+
+                                  AudioChaptersScreen(
+
+                                bibleId:
+                                    widget.bibleId,
+
+                                bookId:
+                                    book["id"],
+
+                                book:
+                                    book["name"],
+
+                              ),
+
+                            ),
+
+                          );
+
+
+                        },
+
+
+                      ),
+
+                    );
+
+
+                  },
+
+                ),
+
     );
 
   }
-
 
 }
