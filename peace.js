@@ -1,40 +1,45 @@
 import 'package:flutter/material.dart';
 
 import '../services/audio_service.dart';
-import 'audio_chapters_screen.dart';
+import 'audio_player_screen.dart';
 
 
-class AudioBooksScreen extends StatefulWidget {
+class AudioChaptersScreen extends StatefulWidget {
 
   final String bibleId;
+  final String bookId;
+  final String book;
 
 
-  const AudioBooksScreen({
+  const AudioChaptersScreen({
 
     super.key,
 
     required this.bibleId,
 
+    required this.bookId,
+
+    required this.book,
+
   });
 
 
-
   @override
-  State<AudioBooksScreen> createState() =>
-      _AudioBooksScreenState();
+  State<AudioChaptersScreen> createState() =>
+      _AudioChaptersScreenState();
 
 }
 
 
 
-class _AudioBooksScreenState
-    extends State<AudioBooksScreen> {
+class _AudioChaptersScreenState
+    extends State<AudioChaptersScreen> {
 
 
   bool loading = true;
 
 
-  List<dynamic> books = [];
+  List<dynamic> chapters = [];
 
 
 
@@ -43,41 +48,33 @@ class _AudioBooksScreenState
 
     super.initState();
 
-    loadBooks();
+    loadChapters();
 
   }
 
 
 
-  Future<void> loadBooks() async {
+  Future<void> loadChapters() async {
 
     try {
 
 
       final result =
-          await AudioService.getBooks(
+          await AudioService.getBookChapters(
 
         bibleId:
             widget.bibleId,
+
+        bookId:
+            widget.bookId,
 
       );
 
 
 
-      setState(() {
+      setState((){
 
-        books = result;
-
-        loading = false;
-
-      });
-
-
-
-    } catch(e){
-
-
-      setState(() {
+        chapters = result;
 
         loading = false;
 
@@ -85,23 +82,25 @@ class _AudioBooksScreenState
 
 
 
-      if(mounted){
+    }catch(e){
 
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
 
-          SnackBar(
+      setState((){
 
-            content:
-                Text(
-                  e.toString(),
-                ),
+        loading = false;
 
-          ),
+      });
 
-        );
 
-      }
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+
+        SnackBar(
+          content:
+              Text(e.toString()),
+        ),
+
+      );
 
     }
 
@@ -118,9 +117,7 @@ class _AudioBooksScreenState
       appBar: AppBar(
 
         title:
-            const Text(
-              "Audio Bible Books",
-            ),
+            Text(widget.book),
 
         centerTitle:true,
 
@@ -139,135 +136,68 @@ class _AudioBooksScreenState
             )
 
 
+          : GridView.builder(
 
-          : books.isEmpty
-
-
-              ? const Center(
-
-                  child:
-                      Text(
-                        "No books found",
-                      ),
-
-                )
+              padding:
+                  const EdgeInsets.all(16),
 
 
-
-              : ListView.builder(
-
-                  padding:
-                      const EdgeInsets.all(16),
+              itemCount:
+                  chapters.length,
 
 
-                  itemCount:
-                      books.length,
+              gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+
+                crossAxisCount:4,
+
+                crossAxisSpacing:12,
+
+                mainAxisSpacing:12,
+
+              ),
 
 
 
-                  itemBuilder:(context,index){
+              itemBuilder:(context,index){
 
 
-                    final book =
-                        books[index];
-
-
-
-                    return Card(
-
-                      elevation:4,
-
-
-                      margin:
-                          const EdgeInsets.only(
-                            bottom:12,
-                          ),
+                final chapter =
+                    chapters[index];
 
 
 
-                      shape:
-                          RoundedRectangleBorder(
+                return InkWell(
 
-                        borderRadius:
-                            BorderRadius.circular(16),
-
-                      ),
+                  borderRadius:
+                      BorderRadius.circular(15),
 
 
+                  onTap:(){
 
-                      child:ListTile(
 
+                    Navigator.push(
 
-                        leading:
-                            CircleAvatar(
+                      context,
 
-                          child:
-                              Text(
-                                "${index + 1}",
-                              ),
+                      MaterialPageRoute(
+
+                        builder:(_)=>
+                            AudioPlayerScreen(
+
+                          bibleId:
+                              widget.bibleId,
+
+                          book:
+                              widget.book,
+
+                          chapter:
+                              index + 1,
+
+                          chapterId:
+                              chapter["id"],
 
                         ),
-
-
-
-                        title:
-                            Text(
-
-                              book["name"] ??
-                                  "Unknown",
-
-                              style:
-                                  const TextStyle(
-
-                                fontWeight:
-                                    FontWeight.bold,
-
-                              ),
-
-                            ),
-
-
-
-                        trailing:
-                            const Icon(
-
-                              Icons.play_circle,
-
-                            ),
-
-
-
-                        onTap:(){
-
-
-                          Navigator.push(
-
-                            context,
-
-                            MaterialPageRoute(
-
-                              builder:(_)=>
-
-                                  AudioChaptersScreen(
-
-                                bibleId:
-                                    widget.bibleId,
-
-                                bookId:
-                                    book["id"],
-
-                                book:
-                                    book["name"],
-
-                              ),
-
-                            ),
-
-                          );
-
-
-                        },
-
 
                       ),
 
@@ -276,7 +206,49 @@ class _AudioBooksScreenState
 
                   },
 
-                ),
+
+
+                  child:Card(
+
+                    elevation:3,
+
+                    shape:
+                        RoundedRectangleBorder(
+
+                      borderRadius:
+                          BorderRadius.circular(15),
+
+                    ),
+
+
+                    child:Center(
+
+                      child:Text(
+
+                        "${index + 1}",
+
+                        style:
+                            const TextStyle(
+
+                          fontSize:22,
+
+                          fontWeight:
+                              FontWeight.bold,
+
+                        ),
+
+                      ),
+
+                    ),
+
+                  ),
+
+                );
+
+
+              },
+
+            ),
 
     );
 
