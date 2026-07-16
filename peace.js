@@ -32,7 +32,7 @@ class _NotesScreenState extends State<NotesScreen> {
 
 
   @override
-  void initState(){
+  void initState() {
 
     super.initState();
 
@@ -42,14 +42,13 @@ class _NotesScreenState extends State<NotesScreen> {
 
 
 
-  void loadNotes(){
+  void loadNotes() {
 
-    setState((){
+    setState(() {
 
-      notes =
-          NotesService.getNotes()
-              .reversed
-              .toList();
+      notes = NotesService.getNotes()
+          .reversed
+          .toList();
 
     });
 
@@ -57,12 +56,11 @@ class _NotesScreenState extends State<NotesScreen> {
 
 
 
-
   Future<void> saveNote() async {
 
 
-    if(titleController.text.trim().isEmpty ||
-        noteController.text.trim().isEmpty){
+    if (titleController.text.trim().isEmpty ||
+        noteController.text.trim().isEmpty) {
 
       return;
 
@@ -92,12 +90,9 @@ class _NotesScreenState extends State<NotesScreen> {
 
 
 
-
   Future<void> deleteNote(int index) async {
 
-
     await NotesService.deleteNote(index);
-
 
     loadNotes();
 
@@ -107,22 +102,39 @@ class _NotesScreenState extends State<NotesScreen> {
 
 
 
-  String formatDate(String date){
+  String formatDate(String? date) {
 
-    final parsed =
-        DateTime.parse(date);
+    try {
+
+      if (date == null) {
+
+        return "Unknown date";
+
+      }
 
 
-    return "${parsed.day}/${parsed.month}/${parsed.year}  "
-        "${parsed.hour}:${parsed.minute.toString().padLeft(2,'0')}";
+      final parsed =
+          DateTime.parse(date);
+
+
+      return "${parsed.day}/${parsed.month}/${parsed.year} "
+          "${parsed.hour}:${parsed.minute.toString().padLeft(2, '0')}";
+
+
+    } catch (e) {
+
+      return "Unknown date";
+
+    }
 
   }
 
 
 
 
+
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
 
 
     return Scaffold(
@@ -134,7 +146,7 @@ class _NotesScreenState extends State<NotesScreen> {
               "My Notes History",
             ),
 
-        centerTitle:true,
+        centerTitle: true,
 
       ),
 
@@ -148,7 +160,7 @@ class _NotesScreenState extends State<NotesScreen> {
 
         child: Column(
 
-          children:[
+          children: [
 
 
             Container(
@@ -167,7 +179,7 @@ class _NotesScreenState extends State<NotesScreen> {
                 gradient:
                     const LinearGradient(
 
-                  colors:[
+                  colors: [
 
                     Colors.deepPurple,
 
@@ -187,35 +199,38 @@ class _NotesScreenState extends State<NotesScreen> {
               child:
                   const Row(
 
-                children:[
+                children: [
+
 
                   Icon(
 
                     Icons.history_edu,
 
-                    size:45,
+                    size: 45,
 
-                    color:Colors.white,
+                    color: Colors.white,
 
                   ),
 
 
-                  SizedBox(width:15),
+
+                  SizedBox(
+                    width: 15,
+                  ),
+
 
 
                   Expanded(
 
-                    child:Text(
+                    child: Text(
 
                       "Your personal journal of teachings,\nthoughts and revelations",
 
-                      style:
+                      style: TextStyle(
 
-                          TextStyle(
+                        color: Colors.white,
 
-                        color:Colors.white,
-
-                        fontSize:16,
+                        fontSize: 16,
 
                       ),
 
@@ -231,7 +246,7 @@ class _NotesScreenState extends State<NotesScreen> {
 
 
 
-            const SizedBox(height:20),
+            const SizedBox(height: 20),
 
 
 
@@ -267,7 +282,7 @@ class _NotesScreenState extends State<NotesScreen> {
 
 
 
-            const SizedBox(height:12),
+            const SizedBox(height: 12),
 
 
 
@@ -311,7 +326,7 @@ class _NotesScreenState extends State<NotesScreen> {
 
 
 
-            const SizedBox(height:15),
+            const SizedBox(height: 15),
 
 
 
@@ -349,7 +364,7 @@ class _NotesScreenState extends State<NotesScreen> {
 
 
 
-            const SizedBox(height:15),
+            const SizedBox(height: 15),
 
 
 
@@ -360,174 +375,195 @@ class _NotesScreenState extends State<NotesScreen> {
               notes.isEmpty
 
 
-              ?
+                  ? const Center(
 
-              const Center(
-
-                child:
-                    Text(
-                      "No saved notes yet",
-                    ),
-
-              )
-
-
-              :
-
-              ListView.builder(
-
-                itemCount:
-                    notes.length,
-
-
-                itemBuilder:(context,index){
-
-
-                  final note =
-                      notes[index];
-
-
-                  return Card(
-
-                    elevation:4,
-
-
-                    margin:
-                        const EdgeInsets.only(
-                          bottom:12,
-                        ),
-
-
-                    shape:
-                        RoundedRectangleBorder(
-
-                      borderRadius:
-                          BorderRadius.circular(18),
-
-                    ),
-
-
-                    child:
-                        ListTile(
-
-                      contentPadding:
-                          const EdgeInsets.all(15),
-
-
-                      title:
+                      child:
                           Text(
+                            "No saved notes yet",
+                          ),
 
-                            note["title"],
+                    )
 
 
-                            style:
-                                const TextStyle(
+                  : ListView.builder(
 
-                              fontWeight:
-                                  FontWeight.bold,
+                      itemCount:
+                          notes.length,
 
-                              fontSize:18,
 
-                            ),
+                      itemBuilder:
+                          (context, index) {
+
+
+                        final note =
+                            notes[index];
+
+
+
+                        return Card(
+
+                          elevation: 4,
+
+
+                          margin:
+                              const EdgeInsets.only(
+                                bottom: 12,
+                              ),
+
+
+                          shape:
+                              RoundedRectangleBorder(
+
+                            borderRadius:
+                                BorderRadius.circular(18),
 
                           ),
 
 
-                      subtitle:
-                          Column(
 
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                          child:
+                              ListTile(
 
-
-                            children:[
+                            contentPadding:
+                                const EdgeInsets.all(15),
 
 
-                              const SizedBox(height:8),
+
+                            title:
+                                Text(
+
+                                  note["title"] ??
+                                      "Untitled Note",
 
 
-                              Text(
-                                note["content"],
-                              ),
+                                  style:
+                                      const TextStyle(
+
+                                    fontWeight:
+                                        FontWeight.bold,
+
+                                    fontSize: 18,
+
+                                  ),
+
+                                ),
 
 
-                              const SizedBox(height:10),
+
+                            subtitle:
+                                Column(
+
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
 
 
-                              Row(
+                              children: [
 
-                                children:[
 
+                                const SizedBox(
+                                  height: 8,
+                                ),
+
+
+
+                                Text(
+
+                                  note["content"] ??
+                                      "",
+
+                                ),
+
+
+
+                                const SizedBox(
+                                  height: 10,
+                                ),
+
+
+
+                                Row(
+
+                                  children: [
+
+
+                                    const Icon(
+
+                                      Icons.calendar_month,
+
+                                      size: 15,
+
+                                    ),
+
+
+
+                                    const SizedBox(
+                                      width: 5,
+                                    ),
+
+
+
+                                    Text(
+
+                                      formatDate(
+                                        note["date"],
+                                      ),
+
+
+                                      style:
+                                          TextStyle(
+
+                                        fontSize: 12,
+
+                                        color:
+                                            Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+
+                                      ),
+
+                                    ),
+
+                                  ],
+
+                                ),
+
+                              ],
+
+                            ),
+
+
+
+                            trailing:
+                                IconButton(
+
+                              icon:
                                   const Icon(
 
-                                    Icons.calendar_month,
+                                    Icons.delete,
 
-                                    size:15,
-
-                                  ),
-
-
-                                  const SizedBox(width:5),
-
-
-                                  Text(
-
-                                    formatDate(
-                                      note["date"],
-                                    ),
-
-                                    style:
-                                        TextStyle(
-
-                                      fontSize:12,
-
-                                      color:
-                                          Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-
-                                    ),
+                                    color:
+                                        Colors.red,
 
                                   ),
 
-                                ],
-
-                              ),
-
-                            ],
-
-                          ),
 
 
-                      trailing:
-                          IconButton(
-
-                        icon:
-                            const Icon(
-
-                              Icons.delete,
-
-                              color:
-                                  Colors.red,
+                              onPressed:
+                                  () =>
+                                      deleteNote(index),
 
                             ),
 
+                          ),
 
-                        onPressed:
-                            ()=>deleteNote(index),
+                        );
 
-                      ),
+
+                      },
 
                     ),
 
-                  );
-
-
-                },
-
-              ),
-
-            )
+            ),
 
           ],
 
