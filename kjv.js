@@ -1,277 +1,160 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-import '../services/audio_service.dart';
-import 'audio_books_screen.dart';
+import 'providers/settings_provider.dart';
+
+import 'services/notes_service.dart';
+import 'services/reading_plan_service.dart';
+
+import 'screens/main_navigation.dart';
+import 'screens/create_account_screen.dart';
+import 'screens/subscription_screen.dart';
+import 'screens/payment_screen.dart';
+import 'screens/payment_status_screen.dart';
 
 
-class AudioBibleScreen extends StatefulWidget {
+void main() async {
 
-  const AudioBibleScreen({super.key});
+  WidgetsFlutterBinding.ensureInitialized();
 
 
-  @override
-  State<AudioBibleScreen> createState() =>
-      _AudioBibleScreenState();
+  // Initialize Hive once
+  await Hive.initFlutter();
 
+
+  // Initialize local storage
+  await NotesService.init();
+
+  await ReadingPlanService.init();
+
+
+  final settingsProvider = SettingsProvider();
+
+  await settingsProvider.load();
+
+
+  runApp(
+
+    ChangeNotifierProvider.value(
+
+      value: settingsProvider,
+
+      child: const PeaceMBibleApp(),
+
+    ),
+
+  );
 }
 
 
 
-class _AudioBibleScreenState
-    extends State<AudioBibleScreen> {
+class PeaceMBibleApp extends StatelessWidget {
 
-
-  bool loading = true;
-
-  List<dynamic> audioBibles = [];
-
+  const PeaceMBibleApp({super.key});
 
 
   @override
-  void initState(){
+  Widget build(BuildContext context) {
 
-    super.initState();
-
-    loadAudioBibles();
-
-  }
+    final settings =
+        Provider.of<SettingsProvider>(context);
 
 
+    return MaterialApp(
 
-  Future<void> loadAudioBibles() async {
+      debugShowCheckedModeBanner: false,
 
-    try {
-
-      final result =
-          await AudioService.getAudioBibles();
+      title: "Peace M Bible",
 
 
-      setState((){
-
-        audioBibles = result;
-
-        loading = false;
-
-      });
+      themeMode: settings.themeMode,
 
 
-    } catch(e){
+      theme: ThemeData(
 
-      setState((){
+        colorSchemeSeed: Colors.deepPurple,
 
-        loading = false;
+        useMaterial3: true,
 
-      });
-
-
-      if(mounted){
-
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
-
-          SnackBar(
-
-            content:
-                Text(
-                  e.toString(),
-                ),
-
-          ),
-
-        );
-
-      }
-
-    }
-
-  }
-
-
-
-  @override
-  Widget build(BuildContext context){
-
-
-    return Scaffold(
-
-      appBar: AppBar(
-
-        title:
-            const Text(
-              "Audio Bible",
-            ),
-
-        centerTitle:true,
+        brightness: Brightness.light,
 
       ),
 
 
+      darkTheme: ThemeData(
 
-      body: loading
+        colorSchemeSeed: Colors.deepPurple,
 
+        useMaterial3: true,
 
-          ? const Center(
+        brightness: Brightness.dark,
 
-              child:
-                  CircularProgressIndicator(),
+      ),
 
-            )
 
+      routes: {
 
+        "/create-account": (_) =>
+            const CreateAccountScreen(),
 
-          : audioBibles.isEmpty
 
+        "/subscription": (_) =>
+            const SubscriptionScreen(),
 
-              ? const Center(
 
-                  child:
-                      Text(
-                        "No Audio Bibles available",
-                      ),
+        "/payment": (context) {
 
-                )
+          final plan =
+              ModalRoute.of(context)!
+                  .settings
+                  .arguments as Map;
 
 
+          return PaymentScreen(
 
-              : ListView.builder(
+            title: plan["title"],
 
-                  padding:
-                      const EdgeInsets.all(16),
+            amount: plan["price"],
 
+            months: plan["months"],
 
-                  itemCount:
-                      audioBibles.length,
+          );
 
+        },
 
 
-                  itemBuilder:(context,index){
+        "/payment-status": (context) {
 
+          final args =
+              ModalRoute.of(context)!
+                  .settings
+                  .arguments as Map;
 
-                    final bible =
-                        audioBibles[index];
 
+          return PaymentStatusScreen(
 
+            checkoutRequestId:
+                args["checkoutRequestId"],
 
-                    return Card(
+            phone:
+                args["phone"],
 
-                      elevation:4,
+            plan:
+                args["plan"],
 
+            months:
+                args["months"],
 
-                      margin:
-                          const EdgeInsets.only(
-                            bottom:12,
-                          ),
+          );
 
+        },
 
+      },
 
-                      shape:
-                          RoundedRectangleBorder(
 
-                        borderRadius:
-                            BorderRadius.circular(18),
-
-                      ),
-
-
-
-                      child:ListTile(
-
-
-                        contentPadding:
-                            const EdgeInsets.all(16),
-
-
-
-                        leading:
-                            const CircleAvatar(
-
-                          radius:25,
-
-                          child:
-                              Icon(
-                                Icons.headphones,
-                              ),
-
-                        ),
-
-
-
-                        title:
-                            Text(
-
-                              bible["name"] ??
-                                  "Audio Bible",
-
-                              style:
-                                  const TextStyle(
-
-                                fontWeight:
-                                    FontWeight.bold,
-
-                              ),
-
-                            ),
-
-
-
-                        subtitle:
-                            Text(
-
-                              bible["description"] ??
-                                  "Listen to Scripture",
-
-                            ),
-
-
-
-                        trailing:
-                            const Icon(
-
-                              Icons.arrow_forward_ios,
-
-                              size:18,
-
-                            ),
-
-
-
-                        onTap:(){
-
-
-                          Navigator.push(
-
-                            context,
-
-                            MaterialPageRoute(
-
-                              builder:(_)=>
-
-                                  AudioBooksScreen(
-
-                                bibleId:
-                                    bible["id"],
-
-                              ),
-
-                            ),
-
-                          );
-
-
-                        },
-
-
-                      ),
-
-                    );
-
-
-                  },
-
-                ),
+      home: const MainNavigation(),
 
     );
-
   }
-
 }
