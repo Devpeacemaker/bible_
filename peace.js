@@ -46,13 +46,23 @@ class _AudioBibleScreenState
           await AudioService.getAudioBibles();
 
 
-      setState((){
+      setState(() {
+  audioBibles = result.where((bible) {
+    final name =
+        (bible["name"] ?? "").toString().toLowerCase();
 
-        audioBibles = result;
+    final description =
+        (bible["description"] ?? "").toString().toLowerCase();
 
-        loading = false;
+    return name.contains("english") ||
+           name.contains("kjv") ||
+           name.contains("esv") ||
+           name.contains("niv") ||
+           description.contains("english");
+  }).toList();
 
-      });
+  loading = false;
+});
 
 
     } catch(e){
