@@ -24,31 +24,71 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: pages[currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
-        height: 75,
-        onDestinationSelected: (index) {
-          setState(() {
-            currentIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.menu_book),
-            selectedIcon: Icon(Icons.menu_book),
-            label: "Bible",
+
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(28),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.workspace_premium),
-            selectedIcon: Icon(Icons.workspace_premium),
-            label: "Premium",
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(28),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.settings),
-            selectedIcon: Icon(Icons.settings),
-            label: "Settings",
+          child: NavigationBar(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            indicatorColor: const Color(0xFFEDE7FF),
+            selectedIndex: currentIndex,
+            height: 78,
+
+            labelBehavior:
+                NavigationDestinationLabelBehavior.alwaysShow,
+
+            onDestinationSelected: (index) {
+              setState(() {
+                currentIndex = index;
+              });
+            },
+
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.menu_book_outlined),
+                selectedIcon: Icon(
+                  Icons.menu_book,
+                  color: Colors.deepPurple,
+                ),
+                label: "Bible",
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.workspace_premium_outlined),
+                selectedIcon: Icon(
+                  Icons.workspace_premium,
+                  color: Colors.amber,
+                ),
+                label: "Premium",
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.settings_outlined),
+                selectedIcon: Icon(
+                  Icons.settings,
+                  color: Colors.blue,
+                ),
+                label: "Settings",
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
