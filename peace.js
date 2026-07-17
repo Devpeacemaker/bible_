@@ -2,15 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../services/swahili_bible_service.dart';
 import 'swahili_chapters_screen.dart';
-
-class SwahiliBooksScreen extends StatefulWidget {
-  const SwahiliBooksScreen({super.key});
-
-  @override
-  State<SwahiliBooksScreen> createState() =>
-      _SwahiliBooksScreenState();
-}
-
 class _SwahiliBooksScreenState
     extends State<SwahiliBooksScreen> {
 
@@ -18,11 +9,24 @@ class _SwahiliBooksScreenState
 
   String search = "";
 
+  List books = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadSwahiliBible();
+  }
+
+  Future<void> loadSwahiliBible() async {
+    await SwahiliBibleService.loadBible();
+
+    setState(() {
+      books = SwahiliBibleService.getBooks();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-
-    final books =
-        SwahiliBibleService.getBooks();
 
     final results =
         books.where((book) {
