@@ -1,104 +1,302 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 
-import 'providers/settings_provider.dart';
+import '../services/swahili_bible_service.dart';
+import 'swahili_chapters_screen.dart';
 
-import 'services/notes_service.dart';
-import 'services/reading_plan_service.dart';
+class SwahiliBooksScreen extends StatefulWidget {
+  const SwahiliBooksScreen({super.key});
 
-import 'screens/main_navigation.dart';
-import 'screens/splash_screen.dart';
-import 'screens/create_account_screen.dart';
-import 'screens/subscription_screen.dart';
-import 'screens/payment_screen.dart';
-import 'screens/payment_status_screen.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  await Hive.initFlutter();
-
-  await NotesService.init();
-  await ReadingPlanService.init();
-
-  final settingsProvider = SettingsProvider();
-  await settingsProvider.load();
-
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => settingsProvider,
-      child: const PeaceMBibleApp(),
-    ),
-  );
+  @override
+  State<SwahiliBooksScreen> createState() =>
+      _SwahiliBooksScreenState();
 }
 
-class PeaceMBibleApp extends StatelessWidget {
-  const PeaceMBibleApp({super.key});
+class _SwahiliBooksScreenState
+    extends State<SwahiliBooksScreen> {
+
+  final controller = TextEditingController();
+
+  String search = "";
 
   @override
   Widget build(BuildContext context) {
-    final settings =
-        Provider.of<SettingsProvider>(context);
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: "Peace M Bible",
+    final books =
+        SwahiliBibleService.getBooks();
 
-      themeMode: settings.themeMode,
+    final results =
+        books.where((book) {
 
-      theme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-        brightness: Brightness.light,
+      return book["name"]
+          .toString()
+          .toLowerCase()
+          .contains(
+            search.toLowerCase(),
+          );
+
+    }).toList();
+
+    return Scaffold(
+
+      body: Container(
+
+        decoration: const BoxDecoration(
+
+          gradient: LinearGradient(
+
+            begin: Alignment.topCenter,
+
+            end: Alignment.bottomCenter,
+
+            colors: [
+
+              Color(0xff4A148C),
+
+              Color(0xff6A1B9A),
+
+              Color(0xffF3E5F5),
+
+            ],
+
+          ),
+
+        ),
+
+        child: SafeArea(
+
+          child: Column(
+
+            children: [
+
+              const SizedBox(height: 10),
+
+              const Icon(
+
+                Icons.menu_book_rounded,
+
+                color: Colors.white,
+
+                size: 70,
+
+              ),
+
+              const SizedBox(height: 10),
+
+              const Text(
+
+                "Biblia Takatifu",
+
+                style: TextStyle(
+
+                  color: Colors.white,
+
+                  fontSize: 28,
+
+                  fontWeight: FontWeight.bold,
+
+                ),
+
+              ),
+
+              const Text(
+
+                "Vitabu vya Biblia",
+
+                style: TextStyle(
+
+                  color: Colors.white70,
+
+                  fontSize: 16,
+
+                ),
+
+              ),
+
+              Padding(
+
+                padding:
+                    const EdgeInsets.all(20),
+
+                child: TextField(
+
+                  controller: controller,
+
+                  decoration: InputDecoration(
+
+                    filled: true,
+
+                    fillColor: Colors.white,
+
+                    hintText:
+                        "Tafuta kitabu...",
+
+                    prefixIcon:
+                        const Icon(Icons.search),
+
+                    border:
+                        OutlineInputBorder(
+
+                      borderRadius:
+                          BorderRadius.circular(30),
+
+                      borderSide:
+                          BorderSide.none,
+
+                    ),
+
+                  ),
+
+                  onChanged: (value) {
+
+                    setState(() {
+
+                      search = value;
+
+                    });
+
+                  },
+
+                ),
+
+              ),
+
+              Expanded(
+
+                child: ListView.builder(
+
+                  padding:
+                      const EdgeInsets.only(
+                          left: 15,
+                          right: 15),
+
+                  itemCount:
+                      results.length,
+
+                  itemBuilder:
+                      (context, index) {
+
+                    final book =
+                        results[index];
+
+                    return Card(
+
+                      elevation: 8,
+
+                      margin:
+                          const EdgeInsets.only(
+                              bottom: 15),
+
+                      shape:
+                          RoundedRectangleBorder(
+
+                        borderRadius:
+                            BorderRadius.circular(
+                                20),
+
+                      ),
+
+                      child: ListTile(
+
+                        leading:
+                            CircleAvatar(
+
+                          radius: 28,
+
+                          backgroundColor:
+                              Colors.deepPurple,
+
+                          child: Text(
+
+                            "${index + 1}",
+
+                            style:
+                                const TextStyle(
+
+                              color:
+                                  Colors.white,
+
+                              fontWeight:
+                                  FontWeight.bold,
+
+                            ),
+
+                          ),
+
+                        ),
+
+                        title: Text(
+
+                          book["name"],
+
+                          style:
+                              const TextStyle(
+
+                            fontWeight:
+                                FontWeight.bold,
+
+                            fontSize: 18,
+
+                          ),
+
+                        ),
+
+                        subtitle: Text(
+
+                          "${book["chapters"].length} Sura",
+
+                        ),
+
+                        trailing:
+                            const Icon(
+
+                          Icons.arrow_forward_ios,
+
+                          color:
+                              Colors.deepPurple,
+
+                        ),
+
+                        onTap: () {
+
+                          Navigator.push(
+
+                            context,
+
+                            MaterialPageRoute(
+
+                              builder: (_) =>
+                                  SwahiliChaptersScreen(
+
+                                book: book,
+
+                              ),
+
+                            ),
+
+                          );
+
+                        },
+
+                      ),
+
+                    );
+
+                  },
+
+                ),
+
+              ),
+
+            ],
+
+          ),
+
+        ),
+
       ),
 
-      darkTheme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-        brightness: Brightness.dark,
-      ),
-
-      routes: {
-        "/create-account": (_) =>
-            const CreateAccountScreen(),
-
-        "/subscription": (_) =>
-            const SubscriptionScreen(),
-
-        "/payment": (context) {
-          final plan =
-              ModalRoute.of(context)!
-                  .settings
-                  .arguments as Map;
-
-          return PaymentScreen(
-            title: plan["title"],
-            amount: plan["price"],
-            months: plan["months"],
-          );
-        },
-
-        "/payment-status": (context) {
-          final args =
-              ModalRoute.of(context)!
-                  .settings
-                  .arguments as Map;
-
-          return PaymentStatusScreen(
-            checkoutRequestId:
-                args["checkoutRequestId"],
-            phone:
-                args["phone"],
-            plan:
-                args["plan"],
-            months:
-                args["months"],
-          );
-        },
-      },
-
-      home: const SplashScreen(),
     );
+
   }
+
 }
