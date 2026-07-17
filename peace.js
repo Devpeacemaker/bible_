@@ -1,76 +1,301 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/material.dart';
 
+import '../services/swahili_bible_service.dart';
+import 'swahili_chapters_screen.dart';
 
-class NotesService {
+class SwahiliBooksScreen extends StatefulWidget {
+  const SwahiliBooksScreen({super.key});
 
-  static const String boxName = "bible_notes";
+  @override
+  State<SwahiliBooksScreen> createState() =>
+      _SwahiliBooksScreenState();
+}
 
+class _SwahiliBooksScreenState
+    extends State<SwahiliBooksScreen> {
 
-  static Future<void> init() async {
+  final controller = TextEditingController();
 
-    await Hive.openBox(boxName);
+  String search = "";
 
-  }
+  @override
+  Widget build(BuildContext context) {
 
+    final books =
+        SwahiliBibleService.getBooks();
 
+    final results =
+        books.where((book) {
 
-  static Box get box => Hive.box(boxName);
+      return book["name"]
+          .toString()
+          .toLowerCase()
+          .contains(
+            search.toLowerCase(),
+          );
 
+    }).toList();
 
+    return Scaffold(
 
-  static Future<void> addNote({
+      body: Container(
 
-    required String title,
+        decoration: const BoxDecoration(
 
-    required String content,
+          gradient: LinearGradient(
 
-    String category = "General",
+            begin: Alignment.topCenter,
 
-  }) async {
+            end: Alignment.bottomCenter,
 
-    await box.add({
+            colors: [
 
-      "title": title,
+              Color(0xff4A148C),
 
-      "content": content,
+              Color(0xff6A1B9A),
 
-      "category": category,
+              Color(0xffF3E5F5),
 
-      "favorite": false,
+            ],
 
-      "date": DateTime.now().toIso8601String(),
+          ),
 
-    });
+        ),
 
-  }
+        child: SafeArea(
 
+          child: Column(
 
+            children: [
 
-  static List getNotes(){
+              const SizedBox(height: 10),
 
-    return box.values.toList();
+              const Icon(
 
-  }
+                Icons.menu_book_rounded,
 
+                color: Colors.white,
 
+                size: 70,
 
-  static Future<void> updateNote(
+              ),
 
-      int index,
+              const SizedBox(height: 10),
 
-      Map note,
+              const Text(
 
-  ) async {
+                "Biblia Takatifu",
 
-    await box.put(index, note);
+                style: TextStyle(
 
-  }
+                  color: Colors.white,
 
+                  fontSize: 28,
 
+                  fontWeight: FontWeight.bold,
 
-  static Future<void> deleteNote(int index) async {
+                ),
 
-    await box.deleteAt(index);
+              ),
+
+              const Text(
+
+                "Vitabu vya Biblia",
+
+                style: TextStyle(
+
+                  color: Colors.white70,
+
+                  fontSize: 16,
+
+                ),
+
+              ),
+
+              Padding(
+
+                padding:
+                    const EdgeInsets.all(20),
+
+                child: TextField(
+
+                  controller: controller,
+
+                  decoration: InputDecoration(
+
+                    filled: true,
+
+                    fillColor: Colors.white,
+
+                    hintText:
+                        "Tafuta kitabu...",
+
+                    prefixIcon:
+                        const Icon(Icons.search),
+
+                    border:
+                        OutlineInputBorder(
+
+                      borderRadius:
+                          BorderRadius.circular(30),
+
+                      borderSide:
+                          BorderSide.none,
+
+                    ),
+
+                  ),
+
+                  onChanged: (value) {
+
+                    setState(() {
+
+                      search = value;
+
+                    });
+
+                  },
+
+                ),
+
+              ),
+
+              Expanded(
+
+                child: ListView.builder(
+
+                  padding:
+                      const EdgeInsets.only(
+                          left: 15,
+                          right: 15),
+
+                  itemCount:
+                      results.length,
+
+                  itemBuilder:
+                      (context, index) {
+
+                    final book =
+                        results[index];
+
+                    return Card(
+
+                      elevation: 8,
+
+                      margin:
+                          const EdgeInsets.only(
+                              bottom: 15),
+
+                      shape:
+                          RoundedRectangleBorder(
+
+                        borderRadius:
+                            BorderRadius.circular(
+                                20),
+
+                      ),
+
+                      child: ListTile(
+
+                        leading:
+                            CircleAvatar(
+
+                          radius: 28,
+
+                          backgroundColor:
+                              Colors.deepPurple,
+
+                          child: Text(
+
+                            "${index + 1}",
+
+                            style:
+                                const TextStyle(
+
+                              color:
+                                  Colors.white,
+
+                              fontWeight:
+                                  FontWeight.bold,
+
+                            ),
+
+                          ),
+
+                        ),
+
+                        title: Text(
+
+                          book["name"],
+
+                          style:
+                              const TextStyle(
+
+                            fontWeight:
+                                FontWeight.bold,
+
+                            fontSize: 18,
+
+                          ),
+
+                        ),
+
+                        subtitle: Text(
+
+                          "${book["chapters"].length} Sura",
+
+                        ),
+
+                        trailing:
+                            const Icon(
+
+                          Icons.arrow_forward_ios,
+
+                          color:
+                              Colors.deepPurple,
+
+                        ),
+
+                        onTap: () {
+
+                          Navigator.push(
+
+                            context,
+
+                            MaterialPageRoute(
+
+                              builder: (_) =>
+                                  SwahiliChaptersScreen(
+
+                                book: book,
+
+                              ),
+
+                            ),
+
+                          );
+
+                        },
+
+                      ),
+
+                    );
+
+                  },
+
+                ),
+
+              ),
+
+            ],
+
+          ),
+
+        ),
+
+      ),
+
+    );
 
   }
 
