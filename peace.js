@@ -1,579 +1,196 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
 import '../services/user_service.dart';
 
-class PaymentScreen extends StatefulWidget {
-
-  final String title;
-  final int amount;
+class PaymentStatusScreen extends StatefulWidget {
+  final String checkoutRequestId;
+  final String phone;
+  final String plan;
   final int months;
 
-  const PaymentScreen({
-
+  const PaymentStatusScreen({
     super.key,
-
-    required this.title,
-
-    required this.amount,
-
+    required this.checkoutRequestId,
+    required this.phone,
+    required this.plan,
     required this.months,
-
   });
 
-
   @override
-  State<PaymentScreen> createState() =>
-      _PaymentScreenState();
-
+  State<PaymentStatusScreen> createState() =>
+      _PaymentStatusScreenState();
 }
 
+class _PaymentStatusScreenState
+    extends State<PaymentStatusScreen> {
+  Timer? timer;
 
-class _PaymentScreenState
-    extends State<PaymentScreen> {
-
-
-  final phoneController =
-      TextEditingController();
-
-
-  bool loading = false;
-
+  String status = "Waiting for M-PESA payment...";
 
   @override
   void initState() {
-
     super.initState();
 
-    loadPhone();
-
+    timer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => checkPayment(),
+    );
   }
 
-
-  Future<void> loadPhone() async {
-
-    final user =
-        await UserService.getUser();
-
-
-    if (user != null) {
-
-      phoneController.text =
-          user.phone;
-
-      setState(() {});
-
-    }
-
-  }
-
-
-
-  Future<void> payNow() async {
-
-
-    if (phoneController.text.isEmpty) {
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-
-        const SnackBar(
-
-          content:
-              Text("Enter M-PESA phone number"),
-
-        ),
-
-      );
-
-      return;
-
-    }
-
-
-    setState(() {
-
-      loading = true;
-
-    });
-
-
+  Future<void> checkPayment() async {
     try {
-
-
-      final response =
-          await ApiService.stkPush(
-
-        phone:
-            phoneController.text.trim(),
-
-        amount:
-            widget.amount,
-
-        plan:
-            widget.title,
-
+      final data = await ApiService.paymentStatus(
+        widget.checkoutRequestId,
       );
 
+      if (data["status"] == "completed") {
+        timer?.cancel();
 
-      if (!mounted) return;
+        // Activate premium on server
+        await ApiService.activatePremium(
+          phone: widget.phone,
+          plan: widget.plan,
+        );
 
+        // Activate premium locally
+        await UserService.activatePremium(
+          plan: widget.plan,
+          months: widget.months,
+        );
 
-      Navigator.pushNamed(
+        if (!mounted) return;
 
-        context,
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => AlertDialog(
+            title: const Text("Payment Successful"),
+            content: Text(
+              "Your ${widget.plan} subscription has been activated successfully.",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.popUntil(
+                    context,
+                    (route) => route.isFirst,
+                  );
+                },
+                child: const Text("Continue"),
+              ),
+            ],
+          ),
+        );
 
-        "/payment-status",
+        return;
+      }
 
-        arguments: {
+      if (data["status"] == "failed") {
+        timer?.cancel();
 
-          "checkoutRequestId":
-              response["checkoutRequestId"],
+        setState(() {
+          status = "Payment Failed";
+        });
 
-          "phone":
-              phoneController.text.trim(),
+        return;
+      }
 
-          "plan":
-              widget.title,
+      if (data["status"] == "cancelled") {
+        timer?.cancel();
 
-          "months":
-              widget.months,
+        setState(() {
+          status = "Payment Cancelled";
+        });
 
-        },
-
-      );
-
-
-    } catch (e) {
-
-
-      if (!mounted) return;
-
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-
-        SnackBar(
-
-          content:
-              Text(e.toString()),
-
-        ),
-
-      );
-
-
-    }
-
-
-    if (mounted) {
+        return;
+      }
 
       setState(() {
-
-        loading = false;
-
+        status = "Waiting for M-PESA confirmation...";
       });
-
+    } catch (e) {
+      setState(() {
+        status = "Checking payment...";
+      });
     }
-
   }
-
-
 
   @override
   Widget build(BuildContext context) {
-
-
     return Scaffold(
-
-      body: Container(
-
-
-        decoration:
-            const BoxDecoration(
-
-          gradient:
-              LinearGradient(
-
-            colors: [
-
-              Color(0xff5B2EFF),
-
-              Color(0xff2F80ED),
-
-              Color(0xff56CCF2),
-
-            ],
-
-            begin:
-                Alignment.topLeft,
-
-            end:
-                Alignment.bottomRight,
-
-          ),
-
-        ),
-
-
-
-        child: SafeArea(
-
-          child: Padding(
-
-            padding:
-                const EdgeInsets.all(20),
-
-
-            child: Column(
-
-              children: [
-
-
-
-                const Icon(
-
-                  Icons.payment,
-
-                  size: 75,
-
-                  color: Colors.white,
-
-                ),
-
-
-
-                const SizedBox(height: 10),
-
-
-
-                const Text(
-
-                  "Confirm Payment",
-
-                  style:
-                      TextStyle(
-
-                    color:
-                        Colors.white,
-
-                    fontSize:
-                        28,
-
-                    fontWeight:
-                        FontWeight.bold,
-
-                  ),
-
-                ),
-
-
-
-                const SizedBox(height: 25),
-
-
-
-                Container(
-
-                  padding:
-                      const EdgeInsets.all(18),
-
-                  decoration:
-                      BoxDecoration(
-
-                    color:
-                        Colors.white,
-
-                    borderRadius:
-                        BorderRadius.circular(
-                            25),
-
-                  ),
-
-
-                  child: TextField(
-
-                    controller:
-                        phoneController,
-
-
-                    keyboardType:
-                        TextInputType.phone,
-
-
-                    decoration:
-                        InputDecoration(
-
-                      labelText:
-                          "M-PESA Phone Number",
-
-                      hintText:
-                          "2547XXXXXXXX",
-
-                      prefixIcon:
-                          const Icon(
-
-                        Icons.phone,
-
-                        color:
-                            Colors.deepPurple,
-
-                      ),
-
-
-                      border:
-                          OutlineInputBorder(
-
-                        borderRadius:
-                            BorderRadius.circular(
-                                18),
-
-                      ),
-
-                    ),
-
-                  ),
-
-                ),
-
-
-
-                const SizedBox(height:20),
-
-
-
-                Container(
-
-                  padding:
-                      const EdgeInsets.all(20),
-
-                  decoration:
-                      BoxDecoration(
-
-                    color:
-                        Colors.white,
-
-                    borderRadius:
-                        BorderRadius.circular(
-                            25),
-
-                  ),
-
-
-                  child: Row(
-
-                    children: [
-
-
-                      const CircleAvatar(
-
-                        radius:28,
-
-                        backgroundColor:
-                            Colors.deepPurple,
-
-                        child:
-                            Icon(
-
-                          Icons.workspace_premium,
-
-                          color:
-                              Colors.white,
-
-                        ),
-
-                      ),
-
-
-                      const SizedBox(
-                          width:20),
-
-
-                      Expanded(
-
-                        child: Column(
-
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-
-                          children: [
-
-
-                            Text(
-
-                              widget.title,
-
-                              style:
-                                  const TextStyle(
-
-                                fontSize:
-                                    20,
-
-                                fontWeight:
-                                    FontWeight.bold,
-
-                              ),
-
-                            ),
-
-
-                            const SizedBox(height:5),
-
-
-                            Text(
-
-                              "KSh ${widget.amount}",
-
-                              style:
-                                  const TextStyle(
-
-                                color:
-                                    Colors.deepPurple,
-
-                                fontSize:
-                                    18,
-
-                                fontWeight:
-                                    FontWeight.bold,
-
-                              ),
-
-                            ),
-
-
-                            Text(
-
-                              "${widget.months} months Premium access",
-
-                            ),
-
-                          ],
-
-                        ),
-
-                      ),
-
-                    ],
-
-                  ),
-
-                ),
-
-
-
-                const Spacer(),
-
-
-
-                SizedBox(
-
-                  width:
-                      double.infinity,
-
-                  height:
-                      58,
-
-
-                  child:
-                      ElevatedButton.icon(
-
-
-                    icon:
-                        loading
-
-                            ? const SizedBox(
-
-                                width:
-                                    22,
-
-                                height:
-                                    22,
-
-                                child:
-                                    CircularProgressIndicator(
-
-                                  strokeWidth:
-                                      2,
-
-                                  color:
-                                      Colors.white,
-
-                                ),
-
-                              )
-
-                            : const Icon(
-                                Icons.phone_android,
-                              ),
-
-
-
-                    label:
-                        Text(
-
-                      loading
-
-                          ? "Sending Request..."
-
-                          : "Pay via M-PESA",
-
-                      style:
-                          const TextStyle(
-
-                        fontSize:
-                            18,
-
-                        fontWeight:
-                            FontWeight.bold,
-
-                      ),
-
-                    ),
-
-
-                    onPressed:
-                        loading
-                            ? null
-                            : payNow,
-
-
-                    style:
-                        ElevatedButton.styleFrom(
-
-                      backgroundColor:
-                          Colors.white,
-
-                      foregroundColor:
-                          Colors.deepPurple,
-
-                      shape:
-                          RoundedRectangleBorder(
-
-                        borderRadius:
-                            BorderRadius.circular(
-                                20),
-
-                      ),
-
-                    ),
-
-                  ),
-
-                ),
-
-
-              ],
-
-            ),
-
-          ),
-
-        ),
-
+      appBar: AppBar(
+        title: const Text("Processing Payment"),
       ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(25),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
 
+              const SizedBox(height: 30),
+
+              Text(
+                status,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              const Text(
+                "Complete the M-PESA prompt on your phone.\n"
+                "The payment status will be checked automatically every 5 seconds.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey,
+                ),
+              ),
+
+              const SizedBox(height: 35),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.refresh),
+                  label: const Text("Check Now"),
+                  onPressed: checkPayment,
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.close),
+                  label: const Text("Cancel"),
+                  onPressed: () {
+                    timer?.cancel();
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
-
   }
 
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
 }
