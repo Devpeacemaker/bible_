@@ -1,51 +1,105 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+import 'package:flutter/material.dart';
 
-    <queries>
+class DictionaryScreen extends StatefulWidget {
+  const DictionaryScreen({super.key});
 
-        <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
-        </intent>
+  @override
+  State<DictionaryScreen> createState() => _DictionaryScreenState();
+}
 
-        <intent>
-            <action android:name="android.intent.action.VIEW"/>
-            <data android:scheme="https"/>
-        </intent>
+class _DictionaryScreenState extends State<DictionaryScreen> {
+  final searchController = TextEditingController();
 
-    </queries>
+  final List<Map<String, String>> words = [
+    {
+      "word": "Amen",
+      "meaning": "So be it; truly."
+    },
+    {
+      "word": "Grace",
+      "meaning": "God's undeserved favor."
+    },
+    {
+      "word": "Faith",
+      "meaning": "Complete trust in God."
+    },
+    {
+      "word": "Messiah",
+      "meaning": "The Anointed One, Jesus Christ."
+    },
+    {
+      "word": "Gospel",
+      "meaning": "The good news of Jesus Christ."
+    },
+    {
+      "word": "Disciple",
+      "meaning": "A follower of Jesus."
+    },
+    {
+      "word": "Covenant",
+      "meaning": "A sacred agreement between God and man."
+    },
+    {
+      "word": "Sabbath",
+      "meaning": "The holy day of rest."
+    },
+  ];
 
-    <application
-        android:label="Peace M Bible"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+  String search = "";
 
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:taskAffinity=""
-            android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
+  @override
+  Widget build(BuildContext context) {
+    final filtered = words.where((e) {
+      return e["word"]!
+          .toLowerCase()
+          .contains(search.toLowerCase());
+    }).toList();
 
-            <meta-data
-                android:name="io.flutter.embedding.android.NormalTheme"
-                android:resource="@style/NormalTheme"
-            />
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-
-        </activity>
-
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2" />
-
-    </application>
-
-</manifest>
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Bible Dictionary"),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(15),
+            child: TextField(
+              controller: searchController,
+              decoration: const InputDecoration(
+                hintText: "Search word...",
+                prefixIcon: Icon(Icons.search),
+              ),
+              onChanged: (v) {
+                setState(() {
+                  search = v;
+                });
+              },
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: filtered.length,
+              itemBuilder: (_, i) {
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: ListTile(
+                    title: Text(
+                      filtered[i]["word"]!,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(filtered[i]["meaning"]!),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
