@@ -1,563 +1,135 @@
-import 'dart:async';
+import 'dart:convert';
 
-import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
-import '../services/api_service.dart';
-import '../services/user_service.dart';
+class ApiService {
+  static const String baseUrl =
+      "https://peace-m-bible-backend.onrender.com";
 
-class PaymentStatusScreen extends StatefulWidget {
+  // ==========================
+  // CREATE ACCOUNT
+  // ==========================
 
-  final String checkoutRequestId;
-  final String phone;
-  final String plan;
-  final int months;
-
-  const PaymentStatusScreen({
-
-    super.key,
-
-    required this.checkoutRequestId,
-
-    required this.phone,
-
-    required this.plan,
-
-    required this.months,
-
-  });
-
-
-  @override
-  State<PaymentStatusScreen> createState() =>
-      _PaymentStatusScreenState();
-
-}
-
-
-
-class _PaymentStatusScreenState
-    extends State<PaymentStatusScreen> {
-
-
-  Timer? timer;
-
-
-  String status =
-      "Waiting for M-PESA payment...";
-
-
-  bool success = false;
-
-
-
-  @override
-  void initState() {
-
-    super.initState();
-
-
-    timer = Timer.periodic(
-
-      const Duration(seconds: 5),
-
-      (_) => checkPayment(),
-
+  static Future<bool> register({
+    required String name,
+    required String email,
+    required String phone,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/register"),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "name": name,
+        "email": email,
+        "phone": phone,
+      }),
     );
 
+    print("REGISTER: ${response.statusCode}");
+    print(response.body);
+
+    return response.statusCode == 200;
   }
 
-
-
-  Future<void> checkPayment() async {
-
-    try {
-
-
-      final data =
-          await ApiService.paymentStatus(
-
-        widget.checkoutRequestId,
-
-      );
-
-
-
-      if (data["status"] == "completed") {
-
-
-        timer?.cancel();
-
-
-        await ApiService.activatePremium(
-
-          phone: widget.phone,
-
-          plan: widget.plan,
-
-        );
-
-
-        await UserService.activatePremium(
-
-          plan: widget.plan,
-
-          months: widget.months,
-
-        );
-
-
-        if (!mounted) return;
-
-
-        setState(() {
-
-          success = true;
-
-          status =
-              "Payment Successful!";
-
-        });
-
-
-        return;
-
-      }
-
-
-
-      if (data["status"] == "failed") {
-
-
-        timer?.cancel();
-
-
-        setState(() {
-
-          status =
-              "Payment Failed";
-
-        });
-
-
-        return;
-
-      }
-
-
-
-      if (data["status"] == "cancelled") {
-
-
-        timer?.cancel();
-
-
-        setState(() {
-
-          status =
-              "Payment Cancelled";
-
-        });
-
-
-        return;
-
-      }
-
-
-
-      setState(() {
-
-        status =
-            "Waiting for M-PESA confirmation...";
-
-      });
-
-
-
-    } catch (e) {
-
-
-      setState(() {
-
-        status =
-            "Checking payment...";
-
-      });
-
-
-    }
-
-  }
-
-
-
-
-
-  @override
-  Widget build(BuildContext context) {
-
-
-    return Scaffold(
-
-
-      body: Container(
-
-
-        decoration:
-            const BoxDecoration(
-
-          gradient:
-              LinearGradient(
-
-            colors: [
-
-              Color(0xff5B2EFF),
-
-              Color(0xff2F80ED),
-
-              Color(0xff56CCF2),
-
-            ],
-
-            begin:
-                Alignment.topLeft,
-
-            end:
-                Alignment.bottomRight,
-
-          ),
-
-        ),
-
-
-
-        child: SafeArea(
-
-          child: Padding(
-
-            padding:
-                const EdgeInsets.all(25),
-
-
-            child: Column(
-
-              mainAxisAlignment:
-                  MainAxisAlignment.center,
-
-
-              children: [
-
-
-
-                Container(
-
-                  padding:
-                      const EdgeInsets.all(30),
-
-
-                  decoration:
-                      BoxDecoration(
-
-                    color:
-                        Colors.white,
-
-                    borderRadius:
-                        BorderRadius.circular(
-                            30),
-
-                  ),
-
-
-                  child: Column(
-
-                    children: [
-
-
-                      Icon(
-
-                        success
-
-                            ? Icons.check_circle
-
-                            : Icons.phone_android,
-
-                        size:
-                            90,
-
-                        color:
-
-                            success
-
-                                ? Colors.green
-
-                                : Colors.deepPurple,
-
-                      ),
-
-
-
-                      const SizedBox(height:20),
-
-
-
-                      Text(
-
-                        success
-
-                            ? "Payment Complete"
-
-                            : "Processing Payment",
-
-                        style:
-                            const TextStyle(
-
-                          fontSize:
-                              25,
-
-                          fontWeight:
-                              FontWeight.bold,
-
-                        ),
-
-                      ),
-
-
-
-                      const SizedBox(height:15),
-
-
-
-                      Text(
-
-                        status,
-
-                        textAlign:
-                            TextAlign.center,
-
-                        style:
-                            const TextStyle(
-
-                          fontSize:
-                              17,
-
-                          fontWeight:
-                              FontWeight.w600,
-
-                        ),
-
-                      ),
-
-
-
-                      const SizedBox(height:20),
-
-
-
-                      if (!success)
-
-                        const CircularProgressIndicator(
-
-                          color:
-                              Colors.deepPurple,
-
-                        ),
-
-
-
-                      const SizedBox(height:20),
-
-
-
-                      Text(
-
-                        success
-
-                            ? "Your ${widget.plan} premium access is now active."
-
-                            : "Complete the M-PESA prompt on your phone.\nPayment will be checked automatically.",
-
-
-                        textAlign:
-                            TextAlign.center,
-
-
-                        style:
-                            const TextStyle(
-
-                          color:
-                              Colors.grey,
-
-                        ),
-
-                      ),
-
-
-                    ],
-
-                  ),
-
-                ),
-
-
-
-                const SizedBox(height:30),
-
-
-
-                if (success)
-
-                  SizedBox(
-
-                    width:
-                        double.infinity,
-
-                    height:
-                        55,
-
-
-                    child:
-                        ElevatedButton(
-
-                      onPressed: () {
-
-
-                        Navigator.popUntil(
-
-                          context,
-
-                          (route) =>
-                              route.isFirst,
-
-                        );
-
-
-                      },
-
-                      child:
-                          const Text(
-
-                        "Continue to Bible",
-
-                        style:
-                            TextStyle(
-
-                          fontSize:
-                              17,
-
-                          fontWeight:
-                              FontWeight.bold,
-
-                        ),
-
-                      ),
-
-                    ),
-
-                  )
-
-
-                else ...[
-
-
-
-                  SizedBox(
-
-                    width:
-                        double.infinity,
-
-                    height:
-                        50,
-
-
-                    child:
-                        OutlinedButton.icon(
-
-                      icon:
-                          const Icon(
-                        Icons.refresh,
-                      ),
-
-                      label:
-                          const Text(
-                        "Check Now",
-                      ),
-
-                      onPressed:
-                          checkPayment,
-
-                    ),
-
-                  ),
-
-
-
-                  const SizedBox(height:15),
-
-
-
-                  SizedBox(
-
-                    width:
-                        double.infinity,
-
-                    height:
-                        50,
-
-
-                    child:
-                        TextButton.icon(
-
-                      icon:
-                          const Icon(
-                        Icons.close,
-                      ),
-
-                      label:
-                          const Text(
-                        "Cancel",
-                      ),
-
-                      onPressed: () {
-
-                        timer?.cancel();
-
-                        Navigator.pop(context);
-
-                      },
-
-                    ),
-
-                  ),
-
-
-                ],
-
-
-              ],
-
-            ),
-
-          ),
-
-        ),
-
-      ),
-
+  // ==========================
+  // STK PUSH
+  // ==========================
+
+  static Future<Map<String, dynamic>> stkPush({
+    required String phone,
+    required int amount,
+    required String plan,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/stkpush"),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "phoneNumber": phone,
+        "amount": amount,
+        "accountReference": "Peace M Bible",
+        "transactionDesc": plan,
+      }),
     );
 
+    print("STK PUSH:");
+    print(response.body);
+
+    return jsonDecode(response.body);
   }
 
+  // ==========================
+  // PAYMENT STATUS
+  // ==========================
 
+  static Future<Map<String, dynamic>> paymentStatus(
+      String checkoutId) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/status/$checkoutId"),
+    );
 
+    print("PAYMENT STATUS:");
+    print(response.body);
 
-
-  @override
-  void dispose() {
-
-    timer?.cancel();
-
-    super.dispose();
-
+    return jsonDecode(response.body);
   }
 
+  // ==========================
+  // ACTIVATE PREMIUM
+  // ==========================
+
+  static Future<void> activatePremium({
+    required String phone,
+    required String plan,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/activate"),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "phone": phone,
+        "plan": plan,
+      }),
+    );
+
+    print("ACTIVATE PREMIUM:");
+    print(response.body);
+  }
+
+  // ==========================
+  // CHECK PREMIUM
+  // ==========================
+
+  static Future<bool> premium(String phone) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/premium/$phone"),
+    );
+
+    print("CHECK PREMIUM:");
+    print(response.body);
+
+    final data = jsonDecode(response.body);
+
+    return data["premium"] == true;
+  }
+
+  // ==========================
+  // GET USER
+  // ==========================
+
+  static Future<Map<String, dynamic>> getUser(
+      String phone) async {
+    final response = await http.get(
+      Uri.parse("$baseUrl/user/$phone"),
+    );
+
+    print("GET USER:");
+    print(response.body);
+
+    return jsonDecode(response.body);
+  }
 }
