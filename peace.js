@@ -1,171 +1,96 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user_model.dart';
-import '../services/api_service.dart';
-import '../services/user_service.dart';
 
-class CreateAccountScreen extends StatefulWidget {
-  const CreateAccountScreen({super.key});
+class UserService {
+  static const String _userKey = "peace_m_user";
 
-  @override
-  State<CreateAccountScreen> createState() =>
-      _CreateAccountScreenState();
-}
+  /// Save user
+  static Future<void> saveUser(UserModel user) async {
+    final prefs = await SharedPreferences.getInstance();
 
-class _CreateAccountScreenState
-    extends State<CreateAccountScreen> {
-  final nameController = TextEditingController();
-
-  final emailController = TextEditingController();
-
-  final phoneController = TextEditingController();
-
-  final passwordController = TextEditingController();
-
-  bool loading = false;
-
-  Future<void> createAccount() async {
-    if (nameController.text.isEmpty ||
-        emailController.text.isEmpty ||
-        phoneController.text.isEmpty ||
-        passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please fill all fields."),
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      loading = true;
-    });
-
-    try {
-      final success = await ApiService.register(
-        name: nameController.text.trim(),
-        email: emailController.text.trim(),
-        phone: phoneController.text.trim(),
-      );
-
-      if (!success) {
-        throw Exception("Failed to create account on server.");
-      }
-
-      final id =
-          "PMB${DateTime.now().millisecondsSinceEpoch}";
-
-      final user = UserModel(
-        id: id,
-        fullName: nameController.text.trim(),
-        email: emailController.text.trim(),
-        phone: phoneController.text.trim(),
-        password: passwordController.text,
-      );
-
-      await UserService.saveUser(user);
-
-      if (!mounted) return;
-
-      setState(() {
-        loading = false;
-      });
-
-      Navigator.pop(context, true);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Account created successfully.",
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        loading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    nameController.dispose();
-    emailController.dispose();
-    phoneController.dispose();
-    passwordController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Create Account"),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          TextField(
-            controller: nameController,
-            decoration: const InputDecoration(
-              labelText: "Full Name",
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          TextField(
-            controller: emailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: "Email",
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          TextField(
-            controller: phoneController,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: "Phone Number",
-              hintText: "2547XXXXXXXX",
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          TextField(
-            controller: passwordController,
-            obscureText: true,
-            decoration: const InputDecoration(
-              labelText: "Password",
-            ),
-          ),
-
-          const SizedBox(height: 30),
-
-          SizedBox(
-            height: 55,
-            child: ElevatedButton(
-              onPressed: loading ? null : createAccount,
-              child: loading
-                  ? const CircularProgressIndicator()
-                  : const Text(
-                      "Create Account",
-                    ),
-            ),
-          ),
-        ],
-      ),
+    await prefs.setString(
+      _userKey,
+      jsonEncode(user.toJson()),
     );
+  }
+
+  /// Get saved user
+  static Future<UserModel?> getUser() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final data = prefs.getString(_userKey);
+
+    if (data == null) return null;
+
+    return UserModel.fromJson(
+      jsonDecode(data),
+    );
+  }
+
+  /// Check whether a user account exists
+  static Future<bool> hasAccount() async {
+    return await getUser() != null;
+  }
+
+  /// Delete account (Logout)
+  static Future<void> deleteUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userKey);
+  }
+
+  /// Check if premium has expired
+  static Future<bool> premiumExpired() async {
+    final user = await getUser();
+
+    if (user == null) return true;
+
+    if (!user.isPremium) return true;
+
+    if (user.expiryDate == null) return true;
+
+    if (DateTime.now().isAfter(user.expiryDate!)) {
+      final updated = user.copyWith(
+        isPremium: false,
+        plan: "",
+        subscribedOn: null,
+        expiryDate: null,
+      );
+
+      await saveUser(updated);
+
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Activate Premium
+  static Future<void> activatePremium({
+    required String plan,
+    required int months,
+  }) async {
+    final user = await getUser();
+
+    if (user == null) return;
+
+    final start = DateTime.now();
+
+    final expiry = DateTime(
+      start.year,
+      start.month + months,
+      start.day,
+    );
+
+    final updated = user.copyWith(
+      isPremium: true,
+      plan: plan,
+      subscribedOn: start,
+      expiryDate: expiry,
+    );
+
+    await saveUser(updated);
   }
 }
