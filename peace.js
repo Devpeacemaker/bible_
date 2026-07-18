@@ -1,46 +1,51 @@
-plugins {
-    id("com.android.application")
-    id("kotlin-android")
-    id("dev.flutter.flutter-gradle-plugin")
-}
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-android {
-    namespace = "com.peacemaker.peacem_bible"
+    <queries>
 
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
+    </queries>
 
-    defaultConfig {
-        applicationId = "com.peacemaker.peacem_bible"
+    <application
+        android:label="Peace M Bible"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
 
-        minSdk = 21
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
 
-        targetSdk = flutter.targetSdkVersion
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme"
+            />
 
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
-    }
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
 
-    buildTypes {
-        release {
-            // We'll replace this with a release signing key later.
-            signingConfig = signingConfigs.getByName("debug")
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
 
-            isMinifyEnabled = false
-            isShrinkResources = false
-        }
-    }
-}
+        </activity>
 
-flutter {
-    source = "../.."
-}
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
+    </application>
+
+</manifest>
