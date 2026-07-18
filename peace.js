@@ -1,135 +1,44 @@
-import 'dart:convert';
+plugins {
+    id("com.android.application")
+    id("kotlin-android")
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id("dev.flutter.flutter-gradle-plugin")
+}
 
-import 'package:http/http.dart' as http;
+android {
+    namespace = "com.example.peace_m_bible"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
 
-class ApiService {
-  static const String baseUrl =
-      "https://peace-m-bible-backend.onrender.com";
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
 
-  // ==========================
-  // CREATE ACCOUNT
-  // ==========================
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()
+    }
 
-  static Future<bool> register({
-    required String name,
-    required String email,
-    required String phone,
-  }) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/register"),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "name": name,
-        "email": email,
-        "phone": phone,
-      }),
-    );
+    defaultConfig {
+        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        applicationId = "com.example.peace_m_bible"
+        // You can update the following values to match your application needs.
+        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
 
-    print("REGISTER: ${response.statusCode}");
-    print(response.body);
+    buildTypes {
+        release {
+            // TODO: Add your own signing config for the release build.
+            // Signing with the debug keys for now, so `flutter run --release` works.
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+}
 
-    return response.statusCode == 200;
-  }
-
-  // ==========================
-  // STK PUSH
-  // ==========================
-
-  static Future<Map<String, dynamic>> stkPush({
-    required String phone,
-    required int amount,
-    required String plan,
-  }) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/stkpush"),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "phoneNumber": phone,
-        "amount": amount,
-        "accountReference": "Peace M Bible",
-        "transactionDesc": plan,
-      }),
-    );
-
-    print("STK PUSH:");
-    print(response.body);
-
-    return jsonDecode(response.body);
-  }
-
-  // ==========================
-  // PAYMENT STATUS
-  // ==========================
-
-  static Future<Map<String, dynamic>> paymentStatus(
-      String checkoutId) async {
-    final response = await http.get(
-      Uri.parse("$baseUrl/status/$checkoutId"),
-    );
-
-    print("PAYMENT STATUS:");
-    print(response.body);
-
-    return jsonDecode(response.body);
-  }
-
-  // ==========================
-  // ACTIVATE PREMIUM
-  // ==========================
-
-  static Future<void> activatePremium({
-    required String phone,
-    required String plan,
-  }) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/activate"),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "phone": phone,
-        "plan": plan,
-      }),
-    );
-
-    print("ACTIVATE PREMIUM:");
-    print(response.body);
-  }
-
-  // ==========================
-  // CHECK PREMIUM
-  // ==========================
-
-  static Future<bool> premium(String phone) async {
-    final response = await http.get(
-      Uri.parse("$baseUrl/premium/$phone"),
-    );
-
-    print("CHECK PREMIUM:");
-    print(response.body);
-
-    final data = jsonDecode(response.body);
-
-    return data["premium"] == true;
-  }
-
-  // ==========================
-  // GET USER
-  // ==========================
-
-  static Future<Map<String, dynamic>> getUser(
-      String phone) async {
-    final response = await http.get(
-      Uri.parse("$baseUrl/user/$phone"),
-    );
-
-    print("GET USER:");
-    print(response.body);
-
-    return jsonDecode(response.body);
-  }
+flutter {
+    source = "../.."
 }
