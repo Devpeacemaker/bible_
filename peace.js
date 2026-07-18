@@ -1,104 +1,156 @@
 import 'package:flutter/material.dart';
 
-class DictionaryScreen extends StatefulWidget {
-  const DictionaryScreen({super.key});
+import '../services/api_service.dart';
+import 'payment_screen.dart';
+
+class SubscriptionScreen extends StatefulWidget {
+  const SubscriptionScreen({super.key});
 
   @override
-  State<DictionaryScreen> createState() => _DictionaryScreenState();
+  State<SubscriptionScreen> createState() =>
+      _SubscriptionScreenState();
 }
 
-class _DictionaryScreenState extends State<DictionaryScreen> {
-  final searchController = TextEditingController();
+class _SubscriptionScreenState
+    extends State<SubscriptionScreen> {
+  int selectedPlan = 0;
 
-  final List<Map<String, String>> words = [
+  bool loading = false;
+
+  final plans = [
     {
-      "word": "Amen",
-      "meaning": "So be it; truly."
+      "title": "2 Months",
+      "price": 40,
+      "months": 2,
     },
     {
-      "word": "Grace",
-      "meaning": "God's undeserved favor."
+      "title": "6 Months",
+      "price": 350,
+      "months": 6,
     },
     {
-      "word": "Faith",
-      "meaning": "Complete trust in God."
-    },
-    {
-      "word": "Messiah",
-      "meaning": "The Anointed One, Jesus Christ."
-    },
-    {
-      "word": "Gospel",
-      "meaning": "The good news of Jesus Christ."
-    },
-    {
-      "word": "Disciple",
-      "meaning": "A follower of Jesus."
-    },
-    {
-      "word": "Covenant",
-      "meaning": "A sacred agreement between God and man."
-    },
-    {
-      "word": "Sabbath",
-      "meaning": "The holy day of rest."
+      "title": "1 Year",
+      "price": 500,
+      "months": 12,
     },
   ];
 
-  String search = "";
+  Future<void> continuePayment() async {
+    final plan = plans[selectedPlan];
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentScreen(
+          title: plan["title"].toString(),
+          amount: plan["price"] as int,
+          months: plan["months"] as int,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = words.where((e) {
-      return e["word"]!
-          .toLowerCase()
-          .contains(search.toLowerCase());
-    }).toList();
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Bible Dictionary"),
+        title: const Text("Choose Subscription"),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(15),
-            child: TextField(
-              controller: searchController,
-              decoration: const InputDecoration(
-                hintText: "Search word...",
-                prefixIcon: Icon(Icons.search),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const Text(
+              "Select a Premium Plan",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
               ),
-              onChanged: (v) {
-                setState(() {
-                  search = v;
-                });
-              },
             ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: filtered.length,
-              itemBuilder: (_, i) {
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  child: ListTile(
-                    title: Text(
-                      filtered[i]["word"]!,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
+
+            const SizedBox(height: 25),
+
+            Expanded(
+              child: ListView.builder(
+                itemCount: plans.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                    elevation: selectedPlan == index ? 6 : 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      side: BorderSide(
+                        color: selectedPlan == index
+                            ? Colors.purple
+                            : Colors.transparent,
+                        width: 2,
                       ),
                     ),
-                    subtitle: Text(filtered[i]["meaning"]!),
-                  ),
-                );
-              },
+                    child: RadioListTile<int>(
+                      value: index,
+                      groupValue: selectedPlan,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedPlan = value!;
+                        });
+                      },
+                      title: Text(
+                        plans[index]["title"].toString(),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        "KSh ${plans[index]["price"]}",
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 20),
+
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton.icon(
+                icon: loading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.payment),
+                label: Text(
+                  loading
+                      ? "Please wait..."
+                      : "Continue to Payment",
+                  style: const TextStyle(fontSize: 18),
+                ),
+                onPressed: loading
+                    ? null
+                    : () async {
+                        setState(() {
+                          loading = true;
+                        });
+
+                        await continuePayment();
+
+                        if (mounted) {
+                          setState(() {
+                            loading = false;
+                          });
+                        }
+                      },
+              ),
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
